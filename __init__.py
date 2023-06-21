@@ -199,7 +199,7 @@ def set_commands():
         global theme, colors
         themes = list(colors)
         theme = themes[(themes.index(theme) + 1) % len(themes)]
-        os.system(f"color {get_color(8)[0]}")
+        os.system("cls")
         return ""
     
     @Extensions_Commands
@@ -231,49 +231,21 @@ def set_commands():
             while True:
                 anwser = input(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Are you sure you want to clear all the data? [Y(yes)/N(no)]: ")
                 if anwser == "Y":
-                    In = []
-                    Out = {}
-                    theme = "black"
-                    user_gbs = {"__name__": "__main__",
-                                "__doc__": "my first virtual python environment!",
-                                "__package__": None,
-                                "__spec__": None,
-                                "__annotations__": {},
-                                "__builtins__": builtins,
-                                "__loader__": None,
-                                "In": In,
-                                "Out": Out,
-                                "__dict__": user_gbs,
-                                "_": None,
-                                "extend_commands": Extensions_Commands,
-                                "modules": modules}
-                    set_commands()
+                    os.system("cls")
+                    init()
                     break
                 elif anwser == "N":
                     break
             return repr(anwser)
         else:
             if args[0] == "Y":
-                In = []
-                Out = {}
-                theme = "black"
-                user_gbs = {"__name__": "__main__",
-                            "__doc__": "my first virtual python environment!",
-                            "__package__": None,
-                            "__spec__": None,
-                            "__annotations__": {},
-                            "__loader__": None,
-                            "In": In,
-                            "Out": Out,
-                            "_": None,
-                            "extend_commands": Extensions_Commands,
-                            "modules": modules}
-                set_commands()
+                os.system("cls")
+                init()
             return repr(args[0])
 
     @Extensions_Commands
     def load_data(*args, **kwargs): # usage same as the clear_data func
-        """Load a history"""
+        """Load a history file."""
         if repr(clear_data) == "clear_data('Y')":
             load_user_data(input(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Please enter your storage file's path: "))
         return ""
@@ -283,6 +255,21 @@ def set_commands():
         """Get the current time."""
         sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Current time: {datetime.datetime.now()}\n")
         return ""
+
+    @Extensions_Commands
+    def cls(*args, **kwargs): # usage same as the get_time func
+        """Clear the screen."""
+        os.system("cls")
+        return ""
+
+    @Extensions_Commands
+    def restart(*args): # usage same as the cls func
+        """Restart the shell. It will clear all the data."""
+        global user_gbs
+        if repr(user_gbs["clear_data"]) == "clear_data('N')":
+            return ""
+        if not os.system(".\__main__.py"):
+            user_gbs["Exit"]("Y")
 
 
 def load_user_data(storage_file=user_storage_file):
@@ -307,7 +294,6 @@ def load_user_data(storage_file=user_storage_file):
         sys.stdout.write(result)
         sys.stdout.write("\nPlease clear your data\n")
         sys.stdout.flush()
-        time.sleep(1)
     os.system("cls")
     user_storage = open(user_storage_file, "w")
 
@@ -538,8 +524,8 @@ def init():
     exec_flag = False
     exit_f = True
     frame_name = f"<shell-{len(In)}>"
-    colors = {"black": ["light_red", "light_yellow", "light_magenta", "light_green", "magenta", "yellow", "light_cyan", "red", "0f"],
-              "white": ["light_green", "light_blue", "light_green", "light_magenta", "green", "blue", "red", "green", "f0"]}
+    colors = {"black": ["light_red", "light_yellow", "light_magenta", "light_green", "magenta", "yellow", "light_cyan", "red"],
+              "white": ["light_green", "light_blue", "light_green", "light_magenta", "green", "blue", "red", "green"]}
 
     def modified_write(string, color=None, on_color=theme):
         global _write
@@ -547,7 +533,6 @@ def init():
 
     sys.stdout.write = modified_write
     
-    os.system(f"color {get_color(8)[0]}")
     logger.info("Setting theme successful")
 
     sys.stdout.write(f"\x1b]0;My python shell\x07\r")

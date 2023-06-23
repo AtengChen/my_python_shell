@@ -29,15 +29,17 @@ prompt = ""
 code = ""
 _exit = sys.exit
 _write = sys.stdout.write
+_displayhook = sys.__displayhook__
 exit_f = None
 err_pattern = r""
 interact_f = None
-colors = {"black": [None, None, None, None, None, None, None, None]}
+colors = {"black": [None, None, None, None, None, None, None, None, None, None]}
 theme = "black"
 banner = ""
 logo = ""
 user_data = [None, None, None, None]
 user_storage = sys.stdin
+tb_list = []
 
 # set the charactars
 LIGHT_VERTICAL_AND_RIGHT = unicodedata.lookup("BOX DRAWINGS LIGHT VERTICAL AND RIGHT") # U+251C
@@ -171,7 +173,7 @@ def set_commands():
         if not args:
             sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  History:\n")
             if Out:
-                sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \tinputs\t\toutputs\n")
+                sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \tinputs\t\t\toutputs\n")
                 for i, o in Out.items():
                     if len(i) > 20:
                         i = i[:20]
@@ -179,7 +181,7 @@ def set_commands():
                     if len(o) > 20:
                         o = o[:20]
                         o += "..."
-                    sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{color_code(i)}\t\t{o}\n")
+                    sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{color_code(i)}\t\t\t{o}\n")
                 sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n")
                 return ""
             sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \tYou don't have any inputs yet! \n{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n")
@@ -263,13 +265,35 @@ def set_commands():
         return ""
 
     @Extensions_Commands
-    def restart(*args): # usage same as the cls func
+    def restart(*args, **kwargs): # usage same as the cls func
         """Restart the shell. It will clear all the data."""
         global user_gbs
         if repr(user_gbs["clear_data"]) == "clear_data('N')":
             return ""
         if not os.system(".\__main__.py"):
             user_gbs["Exit"]("Y")
+
+    @Extensions_Commands
+    def tb_history(*args, **kwargs): # usage same as the restart func
+        """Get the shell's traceback history."""
+        global tb_list
+        sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL}  \n")
+        if args:
+            if args[0] < len(tb_list):
+                for line in tb_list[args[0] - 1].split("\n"):
+                    sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL}  {line}\n")
+            else:
+                sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  The requested error index doesn't exists.\n")
+            return args[0]
+        for tb in range(len(tb_list)):
+            sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  error {tb + 1}: \n")
+            for line in tb_list[tb].split("\n"):
+                sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL}  \t{line}\n")
+            sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL}  \n")
+        return ""
+            
+
+
 
 
 def load_user_data(storage_file=user_storage_file):
@@ -287,7 +311,7 @@ def load_user_data(storage_file=user_storage_file):
         theme = "black"
         logger.warning("Couldn't find user storage file")
     except Exception as e:
-        logger.error(f'Error opening {storage_file}')
+        logger.error(f'Error opening {storage_file}: {e}')
         error_str = traceback.format_exc()
         sys.stderr.write(f"Error ocurred when opening {storage_file}:\n")
         result = modified_traceback(e)
@@ -355,7 +379,7 @@ def modified_traceback(exc):
     """
     A modified version of traceback
     """
-    global code, In
+    global code, In, user_gbs
     line = f'{LIGHT_HORIZONTAL}' * 50
     traceback_list = traceback.extract_tb(exc.__traceback__)
     result = ""
@@ -364,24 +388,31 @@ def modified_traceback(exc):
         filename, line_num, func_name, error_code = tb
         if filename in __file__:
             continue
+
+        err_func_type = ""
         if func_name == "<module>":
             error_code = code
+            err_func_type = " " + "module"
+        else:
+            if func_name in user_gbs:
+                err_func_type = " " + type(user_gbs[func_name]).__name__
+
         if error_code:
             tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  File {termcolor.colored(filename, *get_color(4))}" \
                       f":{termcolor.colored(line_num, *get_color(5))}, " \
-                      f"at {termcolor.colored(func_name, *get_color(6))}: \n" \
+                      f"at{termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
                       f"  {LIGHT_VERTICAL}\t{color_code(error_code)}\n"
         else:
             try:
                 error_code = In[int(match_filename(filename)) - 1].split("\n")[line_num - 1].strip()
                 tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  File {termcolor.colored(filename, *get_color(4))}" \
                            f":{termcolor.colored(line_num, *get_color(5))}, " \
-                           f"at {termcolor.colored(func_name, *get_color(6))}: \n" \
+                           f"at{termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
                            f"  {LIGHT_VERTICAL}\t{color_code(error_code)}\n"
             except IndexError:
                 tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  File {termcolor.colored(filename, *get_color(4))}" \
                            f":{termcolor.colored(line_num, *get_color(5))}, " \
-                           f"at {termcolor.colored(func_name, *get_color(6))}:\n"
+                           f"at{termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}:\n"
 
     if tb_main:
         result += f"{line}\nTraceback (most recent call last):\n{tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(type(exc).__name__, *get_color(7))}: {exc}\n"
@@ -473,6 +504,11 @@ def color_code(code_string):
     return pygments.highlight(code_string, pygments.lexers.PythonLexer(), pygments.formatters.TerminalFormatter(bg="dark")).split("\n")[0]
 
 
+def modified_write(string, color=colors[theme][8], on_color=theme, **kwargs):
+    global _write
+    _write(termcolor.colored(string, color, "on_" + on_color), **kwargs)
+
+
 def init():
     """
     Initalize the whole shell:
@@ -539,12 +575,8 @@ def init():
     exec_flag = False
     exit_f = True
     frame_name = f"<shell-{len(In)}>"
-    colors = {"black": ["light_red", "light_yellow", "light_magenta", "light_green", "magenta", "yellow", "light_cyan", "red"],
-              "white": ["light_green", "light_blue", "light_green", "light_magenta", "green", "blue", "red", "green"]}
-
-    def modified_write(string, color=None, on_color=theme, **kwargs):
-        global _write
-        _write(termcolor.colored(string, color, "on_" + on_color), **kwargs)
+    colors = {"black": ["light_red", "light_yellow", "light_magenta", "light_green", "magenta", "yellow", "light_cyan", "red", "white", "blue"],
+              "white": ["light_green", "light_blue", "light_green", "light_magenta", "green", "blue", "red", "green", "black", "yellow"]}
 
     sys.stdout.write = modified_write
     
@@ -581,7 +613,7 @@ def init():
  | |  | | |_| | | |   | |_| | |_| | | | (_) | | | |  ____) | | | |  __/ | |
  |_|  |_|\___ | |_|    \___ |\__|_| |_|\___/|_| |_| |_____/|_| |_|\___|_|_|
           __/ |         __/ |                                 For beginners
-         |___/         |___/             A simple shell that is easy to use
+         |___/         |___/             A simple shell that was easy to use
     """
 
     banner = f"\n{termcolor.colored(logo, *get_color(6))}\n\n{81 * chr(9472)}\n\n " \
@@ -606,20 +638,25 @@ def main():
     """
     Main part of the shell
     """
-    global exec_flag, user_gbs, frame_name, prompt, err_pattern, interact_f, code
+    global exec_flag, user_gbs, frame_name, prompt, err_pattern, interact_f, code, exit_f, tb_list
     interact_f = True
     try:
         while True:
             try:
                 code = input_code()
                 parse_code(code)
-                user_gbs["__dict__"] = user_gbs
-                sys.stdout.write("")
+            except RuntimeError:
+                exit_f = False
+                _exit()
             except Exception as e:
                 Out[code] = str(e)
                 error_str = traceback.format_exc()
                 result = modified_traceback(e)
                 sys.stdout.write(result)
+                tb_list.append(result)
+            else:
+                user_gbs["__dict__"] = user_gbs
+                sys.stdout.write("")
     except KeyboardInterrupt as e:
         sys.stderr.write(termcolor.colored(f"\nKeyboardInterrupt\n", *get_color(7)))
         main()

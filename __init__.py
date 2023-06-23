@@ -542,9 +542,9 @@ def init():
     colors = {"black": ["light_red", "light_yellow", "light_magenta", "light_green", "magenta", "yellow", "light_cyan", "red"],
               "white": ["light_green", "light_blue", "light_green", "light_magenta", "green", "blue", "red", "green"]}
 
-    def modified_write(string, color=None, on_color=theme):
+    def modified_write(string, color=None, on_color=theme, **kwargs):
         global _write
-        _write(termcolor.colored(string, color, "on_" + on_color))
+        _write(termcolor.colored(string, color, "on_" + on_color), **kwargs)
 
     sys.stdout.write = modified_write
     

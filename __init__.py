@@ -11,9 +11,9 @@ import pprint               # pretty display of the displayhook
 import pygments             # replace the keywords and builtin-functions with the different colors, needs to install it from pip
 import pygments.formatters  #
 import pygments.lexers      #
+import re                   # matching file names
 import sys                  # 
 import termcolor            # color of the terminal, needs to install it from pip
-import time                 # for timing
 import traceback            # capture the error info and color it
 import unicodedata          # print unicode charactars
 import webbrowser           # only for an extension command
@@ -316,6 +316,12 @@ def get_color(idx):
     global colors, theme
     return (colors[theme][idx], "on_" + theme)
 
+def match_filename(name):
+    """
+    match the name of a file
+    """
+    return re.match(r"<shell-(\d)>", name).groups()[0]
+
 
 def on_exit():
     """
@@ -346,34 +352,43 @@ def modified_displayhook(obj):
 
 
 def modified_traceback(exc):
-    global code
-
+    """
+    A modified version of traceback
+    """
+    global code, In
     line = f'{LIGHT_HORIZONTAL}' * 50
     traceback_list = traceback.extract_tb(exc.__traceback__)
-    result = f"{line}\nTraceback (most recent call last):\n"
-    cont = False
+    result = ""
+    tb_main = ""
     for tb in traceback_list:
         filename, line_num, func_name, error_code = tb
-        for fpath in sys.path:
-            if fpath in filename:
-                cont = True
-            if "<shell-" in filename:
-                cont = False
-        if cont:
+        if filename in __file__:
             continue
         if func_name == "<module>":
             error_code = code
         if error_code:
-            result += f'  {LIGHT_VERTICAL_AND_RIGHT}  File "{termcolor.colored(filename, *get_color(4))}", ' \
-                      f'line {termcolor.colored(line_num, *get_color(5))}, ' \
-                      f'in {termcolor.colored(func_name, *get_color(6))}: \n' \
-                      f'  {LIGHT_VERTICAL}\t{color_code(error_code)}\n'
+            tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  File {termcolor.colored(filename, *get_color(4))}" \
+                      f":{termcolor.colored(line_num, *get_color(5))}, " \
+                      f"at {termcolor.colored(func_name, *get_color(6))}: \n" \
+                      f"  {LIGHT_VERTICAL}\t{color_code(error_code)}\n"
         else:
-            result += f'  {LIGHT_VERTICAL_AND_RIGHT}  File "{termcolor.colored(filename, *get_color(4))}", ' \
-                      f'line {termcolor.colored(line_num, *get_color(5))}, ' \
-                      f'in {termcolor.colored(func_name, *get_color(6))}\n'
-    result += f"  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(type(exc).__name__, *get_color(7))}: {exc}\n"
-    result += line + "\n"
+            try:
+                error_code = In[int(match_filename(filename)) - 1].split("\n")[line_num - 1].strip()
+                tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  File {termcolor.colored(filename, *get_color(4))}" \
+                           f":{termcolor.colored(line_num, *get_color(5))}, " \
+                           f"at {termcolor.colored(func_name, *get_color(6))}: \n" \
+                           f"  {LIGHT_VERTICAL}\t{color_code(error_code)}\n"
+            except IndexError:
+                tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  File {termcolor.colored(filename, *get_color(4))}" \
+                           f":{termcolor.colored(line_num, *get_color(5))}, " \
+                           f"at {termcolor.colored(func_name, *get_color(6))}:\n"
+
+    if tb_main:
+        result += f"{line}\nTraceback (most recent call last):\n{tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(type(exc).__name__, *get_color(7))}: {exc}\n"
+        result += line + "\n"
+    else:
+        err_cause = f": {exc}" if str(exc) else ""
+        result += termcolor.colored(f"\n{type(exc).__name__}{err_cause}\n", *get_color(7))
     return result
 
 
@@ -408,20 +423,18 @@ def code_is_complete(inp_code):
 
 
 def input_code(pmt=None):
-    global In, exec_flag, frame_name, prompt
+    global In, exec_flag, frame_name, prompt, exit_f
     try:
         if not pmt:
             prompt = pmt = termcolor.colored(f"\nIn [{len(In) + 1}]", *get_color(3))
         sys.ps1 = f"{pmt}{LIGHT_ARC_DOWN_AND_RIGHT}{RIGHTWARDS_ARROW} "
         inp_code = input(sys.ps1)
-        In.append(inp_code)
     except EOFError:
         In.append(on_exit())
         inp_code = In[-1]
     except RuntimeError:
         exit_f = False
         _exit()
-    frame_name = f"<shell-{len(In)}>"
     if not code_is_complete(inp_code):
         if not exec_flag:
             block = ""
@@ -448,6 +461,8 @@ def input_code(pmt=None):
             exc = SyntaxError("invalid syntax")
             exc.lineno = 1
             raise exc
+    In.append(inp_code)
+    frame_name = f"<shell-{len(In)}>"
     return inp_code
 
 
@@ -562,11 +577,11 @@ def init():
   __  __         _____       _   _                    _____ _          _ _
  |  \/  |       |  __ \     | | | |                  / ____| |        | | |
  | \  / |_   _  | |__) |   _| |_| |__   ___  _ __   | (___ | |__   ___| | |
- | |\/| | | | | |  ___/ | | | __| '_ \ / _ \| '_ \   \___ \| '_ \ / _ \ | |
+ | |\/| | | | | |  ___/ | | | __|  _ \ / _ \|  _ \   \___ \|  _ \ / _ \ | |
  | |  | | |_| | | |   | |_| | |_| | | | (_) | | | |  ____) | | | |  __/ | |
- |_|  |_|\__, | |_|    \__, |\__|_| |_|\___/|_| |_| |_____/|_| |_|\___|_|_|
-          __/ |         __/ |
-         |___/         |___/
+ |_|  |_|\___ | |_|    \___ |\__|_| |_|\___/|_| |_| |_____/|_| |_|\___|_|_|
+          __/ |         __/ |                                 For beginners
+         |___/         |___/             A simple shell that is easy to use
     """
 
     banner = f"\n{termcolor.colored(logo, *get_color(6))}\n\n{81 * chr(9472)}\n\n " \
@@ -605,9 +620,8 @@ def main():
                 error_str = traceback.format_exc()
                 result = modified_traceback(e)
                 sys.stdout.write(result)
-
     except KeyboardInterrupt as e:
-        sys.stderr.write(termcolor.colored(f"\n{traceback.format_exc(limit=0)}\n", *get_color(7)))
+        sys.stderr.write(termcolor.colored(f"\nKeyboardInterrupt\n", *get_color(7)))
         main()
 
 

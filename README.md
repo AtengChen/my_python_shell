@@ -80,4 +80,4 @@ print(modules.math.sqrt(10)) # 3.1622776601683795
 
 ## License
 
-This project is licensed under the [GPL LICENSE](https://www.gnu.org/licenses/gpl-3.0.html "GPL LICENSE")
+This project is licensed under the [GPL LICENSE](https://github.com/AtengChen/my_python_shell/edit/main/LICENSE "GPL LICENSE")

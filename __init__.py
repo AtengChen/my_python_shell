@@ -175,11 +175,11 @@ def set_commands():
             if Out:
                 sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \tinputs\t\t\toutputs\n")
                 for i, o in Out.items():
-                    if len(i) > 20:
-                        i = i[:20]
+                    if len(i) > 10:
+                        i = i[:10]
                         i += "..."
-                    if len(o) > 20:
-                        o = o[:20]
+                    if len(o) > 10:
+                        o = o[:10]
                         o += "..."
                     sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{color_code(i)}\t\t\t{o}\n")
                 sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n")
@@ -314,6 +314,9 @@ def load_user_data(storage_file=user_storage_file):
         theme = "black"
         logger.warning("Couldn't find user storage file")
     except Exception as e:
+        In = []
+        Out = {}
+        theme = "black"
         logger.error(f'Error opening {storage_file}: {e}')
         error_str = traceback.format_exc()
         sys.stderr.write(f"Error ocurred when opening {storage_file}:\n")
@@ -380,13 +383,14 @@ def modified_displayhook(obj):
 
 def modified_traceback(exc):
     """
-    A modified version of traceback
+    A modified version of python's traceback
     """
     global code, In, user_gbs
     line = f'{LIGHT_HORIZONTAL}' * 50
     traceback_list = traceback.extract_tb(exc.__traceback__)
     result = ""
     tb_main = ""
+    err_count = 0
     for tb in traceback_list:
         filename, line_num, func_name, error_code = tb
         if filename in __file__:
@@ -399,7 +403,11 @@ def modified_traceback(exc):
         else:
             if func_name in user_gbs:
                 err_func_type = " " + type(user_gbs[func_name]).__name__
-
+        if isinstance(exc, RecursionError):
+            err_count += 1
+        if err_count > 4:
+            tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  ...\n"
+            break
         if error_code:
             tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  File {termcolor.colored(filename, *get_color(4))}" \
                       f":{termcolor.colored(line_num, *get_color(5))}, " \
@@ -419,7 +427,7 @@ def modified_traceback(exc):
                            f":{termcolor.colored(line_num, *get_color(5))}, " \
                            f"at{termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
                            f"  {LIGHT_VERTICAL}\n{display_code}  {LIGHT_VERTICAL}\n"
-            except IndexError:
+            except (IndexError, AttributeError):
                 tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  File {termcolor.colored(filename, *get_color(4))}" \
                            f":{termcolor.colored(line_num, *get_color(5))}, " \
                            f"at{termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}:\n"
@@ -519,7 +527,7 @@ def modified_write(string, color=colors[theme][8], on_color=theme, **kwargs):
     _write(termcolor.colored(string, color, "on_" + on_color), **kwargs)
 
 
-def init():
+def init(run_before=False):
     """
     Initalize the whole shell:
         Set up the environment vars
@@ -556,8 +564,9 @@ def init():
         if sys.__stdin__:
             run_from_console = True
     if not run_from_console:
-        sys.stderr.write("\nCouldn't detect console window, you need to run this program in a terminal.\n")
-        sys.exit()
+        if not __debug__:
+            sys.stderr.write("\nCouldn't detect console window, you need to run this program in a terminal.\n")
+            sys.exit()
     logger.info(f"This is my_python_shell on {sys.platform} terminal")
     logger.info(f"Current time: {datetime.datetime.now()}")
     logger.info("Initializing terminal")
@@ -655,10 +664,6 @@ def main():
             try:
                 code = input_code()
                 parse_code(code)
-            except RuntimeError as e:
-                if isinstance(e, RuntimeError):
-                    exit_f = False
-                    _exit()
             except Exception as e:
                 Out[code] = str(e)
                 error_str = traceback.format_exc()

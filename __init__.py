@@ -264,14 +264,17 @@ def set_commands():
         os.system("cls")
         return ""
 
-    @Extensions_Commands
-    def restart(*args, **kwargs): # usage same as the cls func
-        """Restart the shell. It will clear all the data."""
-        global user_gbs
-        if repr(user_gbs["clear_data"]) == "clear_data('N')":
-            return ""
-        if not os.system(".\__main__.py"):
-            user_gbs["Exit"]("Y")
+    if __debug__:
+        @Extensions_Commands
+        def restart(*args, **kwargs): # usage same as the cls func
+            """Restart the shell. It will clear all the data."""
+            global user_gbs, user_data, user_storage
+            if repr(user_gbs["clear_data"]) == "clear_data('N')":
+                return ""
+            user_data = (In, Out, theme)
+            json.dump(user_data, user_storage)
+            if not os.system(".\__main__.py"):
+                user_gbs["Exit"]("Y")
 
     @Extensions_Commands
     def tb_history(*args, **kwargs): # usage same as the restart func
@@ -401,14 +404,21 @@ def modified_traceback(exc):
             tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  File {termcolor.colored(filename, *get_color(4))}" \
                       f":{termcolor.colored(line_num, *get_color(5))}, " \
                       f"at{termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
-                      f"  {LIGHT_VERTICAL}\t{color_code(error_code)}\n"
+                      f"  {LIGHT_VERTICAL}\n  {LIGHT_VERTICAL}  {termcolor.colored(RIGHTWARDS_ARROW + ' ' + str(line_num), *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n  {LIGHT_VERTICAL}\n"
         else:
             try:
-                error_code = In[int(match_filename(filename)) - 1].split("\n")[line_num - 1].strip()
+                error_input = In[int(match_filename(filename)) - 1].split("\n")
+                error_code = error_input[line_num - 1]
+                display_code = ""
+                for line_index in range(len(error_input)):
+                    if line_index == line_num - 1:
+                        display_code += f"  {LIGHT_VERTICAL}  {termcolor.colored(RIGHTWARDS_ARROW + ' ' + str(line_num), *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n"
+                    else:
+                        display_code += f"  {LIGHT_VERTICAL}\t{termcolor.colored(line_index + 1, *get_color(3))}{LIGHT_VERTICAL} {color_code(error_input[line_index])}\n"
                 tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  File {termcolor.colored(filename, *get_color(4))}" \
                            f":{termcolor.colored(line_num, *get_color(5))}, " \
                            f"at{termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
-                           f"  {LIGHT_VERTICAL}\t{color_code(error_code)}\n"
+                           f"  {LIGHT_VERTICAL}\n{display_code}  {LIGHT_VERTICAL}\n"
             except IndexError:
                 tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  File {termcolor.colored(filename, *get_color(4))}" \
                            f":{termcolor.colored(line_num, *get_color(5))}, " \
@@ -645,9 +655,10 @@ def main():
             try:
                 code = input_code()
                 parse_code(code)
-            except RuntimeError:
-                exit_f = False
-                _exit()
+            except RuntimeError as e:
+                if isinstance(e, RuntimeError):
+                    exit_f = False
+                    _exit()
             except Exception as e:
                 Out[code] = str(e)
                 error_str = traceback.format_exc()

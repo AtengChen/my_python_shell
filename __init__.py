@@ -14,6 +14,7 @@ import pygments.lexers      #
 import re                   # matching file names
 import sys                  # 
 import termcolor            # color of the terminal, needs to install it from pip
+import time                 #
 import traceback            # capture the error info and color it
 import unicodedata          # print unicode charactars
 import webbrowser           # only for an extension command
@@ -29,7 +30,7 @@ prompt = ""
 code = ""
 _exit = sys.exit
 _write = sys.stdout.write
-_displayhook = sys.__displayhook__
+_input = builtins.input
 exit_f = None
 err_pattern = r""
 interact_f = None
@@ -138,13 +139,12 @@ def set_commands():
         global exit_f, In, Out, theme, user_storage, user_data, user_gbs
         if not args:
             while exit_f:
-                anwser = input(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Are you sure you want to exit? [Y(yes)/N(no)]: ")
+                anwser = modified_input(f"Are you sure you want to exit? [Y(yes)/N(no)]: ")
                 if anwser == "Y":
                     exit_f = False
                     sys.stdout.write("Exiting ...\n")
                     user_data = (In, Out, theme)
                     json.dump(user_data, user_storage)
-                    user_storage.close()
                     _exit()
                 elif anwser == "N":
                     return repr(anwser)
@@ -208,7 +208,7 @@ def set_commands():
     def open_browser(*args, **kwargs): # usage same as the change_theme func
         """Open a URL in the browser"""
         if not args:
-            url = input("      {LIGHT_VERTICAL_AND_RIGHT}  Please enter your URL: ")
+            url = modified_input("Please enter your URL: ")
             webbrowser.open(url)
             return repr(url)
         webbrowser.open(args[0])
@@ -218,12 +218,17 @@ def set_commands():
     def open_terminal(*args, **kwargs): # usage same as the open_browser func
         """Execute a CMD command"""
         if not args:
-            cmd = input("      {LIGHT_VERTICAL_AND_RIGHT}  Please enter your command: ")
-            res = os.popen(cmd).read().split("\n")
-            for i in res:
-                sys.stdout.write(f"      {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
+            cmd = modified_input("Please enter your command: ")
+            res = os.popen(cmd).read()
+            if res:
+                for i in res.split("\n"):
+                    sys.stdout.write(f"       {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
             return repr(cmd)
-        os.system(args[0])
+        res = os.popen(args[0]).read()
+        if res:
+            for i in res.split("\n"):
+                sys.stdout.write(f"      {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
+        return repr(args[0])
 
     @Extensions_Commands
     def clear_data(*args, **kwargs): # usage same as the open_terminal func
@@ -231,7 +236,7 @@ def set_commands():
         global In, Out, theme, user_gbs
         if not args:
             while True:
-                anwser = input(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Are you sure you want to clear all the data? [Y(yes)/N(no)]: ")
+                anwser = modified_input(f"Are you sure you want to clear all the data? [Y(yes)/N(no)]: ")
                 if anwser == "Y":
                     os.system("cls")
                     init()
@@ -249,7 +254,7 @@ def set_commands():
     def load_data(*args, **kwargs): # usage same as the clear_data func
         """Load a history file."""
         if repr(clear_data) == "clear_data('Y')":
-            load_user_data(input(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Please enter your storage file's path: "))
+            load_user_data(modified_input(f"Please enter your storage file's path: "))
         return ""
 
     @Extensions_Commands
@@ -346,9 +351,13 @@ def get_color(idx):
     global colors, theme
     return (colors[theme][idx], "on_" + theme)
 
+def modified_input(text="", symbol=LIGHT_VERTICAL_AND_RIGHT):
+    global prompt, _input
+    return _input(f"{' ' * (len(prompt) - 15)}{symbol}  {text}")
+
 def match_filename(name):
     """
-    match the name of a file
+    match the name of a file.
     """
     return re.match(r"<shell-(\d)>", name).groups()[0]
 
@@ -393,7 +402,7 @@ def modified_traceback(exc):
     err_count = 0
     for tb in traceback_list:
         filename, line_num, func_name, error_code = tb
-        if filename in __file__:
+        if (filename in __file__) and (not __debug__):
             continue
 
         err_func_type = ""
@@ -472,12 +481,12 @@ def code_is_complete(inp_code):
 
 
 def input_code(pmt=None):
-    global In, exec_flag, frame_name, prompt, exit_f
+    global In, exec_flag, frame_name, prompt, exit_f, _input
     try:
         if not pmt:
             prompt = pmt = termcolor.colored(f"\nIn [{len(In) + 1}]", *get_color(3))
         sys.ps1 = f"{pmt}{LIGHT_ARC_DOWN_AND_RIGHT}{RIGHTWARDS_ARROW} "
-        inp_code = input(sys.ps1)
+        inp_code = _input(sys.ps1)
     except EOFError:
         In.append(on_exit())
         inp_code = In[-1]
@@ -492,7 +501,7 @@ def input_code(pmt=None):
                 if not exec_flag:
                     try:
                         sys.ps2 = f"{' ' * (len(prompt) - 15)}{LIGHT_VERTICAL_AND_RIGHT}   "
-                        line = input(sys.ps2)
+                        line = _input(sys.ps2)
                     except EOFError:
                         raise IndentationError("expected an indented block")
                     except RuntimeError:
@@ -613,6 +622,7 @@ def init(run_before=False):
     def on_exit():
         return repr(user_gbs["Exit"])
 
+    builtins.input = modified_input
 
     atexit.register(on_exit)
     logger.info("Registering exit-func successful")

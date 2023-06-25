@@ -48,24 +48,91 @@ python my_python_shell.py
 Here are a few examples to help you get started:
 
 1. Print hello world!
-```python
-msg = "hello world!"
-print(msg) # hello world!
+```
+In [1]╭→ msg = "hello world!"
+
+In [2]╭→ print(msg) # hello world!
+hello world!
+
+In [3]╭→
 ```
 
 2. Addition of two numbers
-```python
-a = 5
-b = 10
-result = a + b
-print(result) # 15
+```
+In [1]╭→ a = 5
+
+In [2]╭→ b = 10
+
+In [3]╭→ result = a + b
+
+In [4]╭→ print(result) # 15
+15
+
+In [5]╭→
 ```
 
 3. Square root of 2
-```python
-print(modules.math.sqrt(10)) # 3.1622776601683795
 ```
+In [1]╭→ print(modules.math.sqrt(10)) # 3.1622776601683795
+3.1622776601683795
 
+In [2]╭→
+```
+4. ZeroDivisionError
+```
+In [1]╭→ def a():
+      ├         def b(n):
+      ├                 def c(a, b):
+      ├                         return a / b
+      ├                 return c(n, n)
+      ├         return b(0)
+      ├
+
+In [2]╭→ a()
+──────────────────────────────────────────────────
+Traceback (most recent call last):
+  ├  File <shell-2>:1, at module <module>:
+  │
+  │  → 1│ a()
+  │
+  ├  File <shell-1>:6, at function a:
+  │
+  │     1│ def a():
+  │     2│      def b(n):
+  │     3│              def c(a, b):
+  │     4│                      return a / b
+  │     5│              return c(n, n)
+  │  → 6│      return b(0)
+  │     7│
+  │     8│
+  │
+  ├  File <shell-1>:5, at b:
+  │
+  │     1│ def a():
+  │     2│      def b(n):
+  │     3│              def c(a, b):
+  │     4│                      return a / b
+  │  → 5│              return c(n, n)
+  │     6│      return b(0)
+  │     7│
+  │     8│
+  │
+  ├  File <shell-1>:4, at c:
+  │
+  │     1│ def a():
+  │     2│      def b(n):
+  │     3│              def c(a, b):
+  │  → 4│                      return a / b
+  │     5│              return c(n, n)
+  │     6│      return b(0)
+  │     7│
+  │     8│
+  │
+  └  ZeroDivisionError: division by zero
+──────────────────────────────────────────────────
+
+In [3]╭→
+```
 ## Extension commands
  ### commands
   - Type `Exit` to exit.

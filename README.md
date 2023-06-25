@@ -102,7 +102,7 @@ Traceback (most recent call last):
   │     3│              def c(a, b):
   │     4│                      return a / b
   │     5│              return c(n, n)
-  │  → 6│      return b(0)
+  │   → 6│     return b(0)
   │     7│
   │     8│
   │
@@ -112,7 +112,7 @@ Traceback (most recent call last):
   │     2│      def b(n):
   │     3│              def c(a, b):
   │     4│                      return a / b
-  │  → 5│              return c(n, n)
+  │   → 5│             return c(n, n)
   │     6│      return b(0)
   │     7│
   │     8│
@@ -122,7 +122,7 @@ Traceback (most recent call last):
   │     1│ def a():
   │     2│      def b(n):
   │     3│              def c(a, b):
-  │  → 4│                      return a / b
+  │   → 4│                     return a / b
   │     5│              return c(n, n)
   │     6│      return b(0)
   │     7│
@@ -135,13 +135,16 @@ In [3]╭→
 ```
 ## Extension commands
  ### commands
-  - Type `Exit` to exit.
+  - Type `Exit` or `exit` to exit.
   - Type `change_theme` to change your theme.
   - Type `clear_data` to clear your user data (All your data).
   - Type `get_time` to view current time.
   - Type `history` to view history. Type `history([history id])` to see the history at history id.
   - Type `load_data` to load a specific user storage file.
-  - ...
+  - Type `open_browser` to open a webpage.
+  - Type `open_terminal` to execute a terminal command.
+  - Type `restart` to restart the shell (Only for debugging options `-O`).
+  - Type `tb_history` for the whole traceback history.
  - Type `extend_commands.help_commands()` to see all the commands.
  - Type `extend_commands.help_commands('[your command here]')` for a specific command.
 

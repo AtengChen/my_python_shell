@@ -273,13 +273,14 @@ def set_commands():
         @Extensions_Commands
         def restart(*args, **kwargs): # usage same as the cls func
             """Restart the shell. It will clear all the data."""
-            global user_gbs, user_data, user_storage
+            global user_gbs, user_data, user_storage, exit_f
             if repr(user_gbs["clear_data"]) == "clear_data('N')":
                 return ""
             user_data = (In, Out, theme)
             json.dump(user_data, user_storage)
             if not os.system(".\__main__.py"):
-                user_gbs["Exit"]("Y")
+                exit_f = False
+                _exit()
 
     @Extensions_Commands
     def tb_history(*args, **kwargs): # usage same as the restart func
@@ -359,7 +360,7 @@ def match_filename(name):
     """
     match the name of a file.
     """
-    return re.match(r"<shell-(\d)>", name).groups()[0]
+    return re.match(r"<shell-(\d+)>", name).groups()[0]
 
 
 def on_exit():
@@ -427,11 +428,17 @@ def modified_traceback(exc):
                 error_input = In[int(match_filename(filename)) - 1].split("\n")
                 error_code = error_input[line_num - 1]
                 display_code = ""
+                
                 for line_index in range(len(error_input)):
-                    if line_index == line_num - 1:
-                        display_code += f"  {LIGHT_VERTICAL}  {termcolor.colored(RIGHTWARDS_ARROW + ' ' + str(line_num), *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n"
+                    if not (line_index == line_num - 1):
+                        display_line_number = str(line_index + 1)
+                        display_line_number = display_line_number.rjust(len(str(len(error_input) + 1)) - len(display_line_number) + 1)
+                        display_code += f"  {LIGHT_VERTICAL}\t{termcolor.colored(display_line_number, *get_color(3))}{LIGHT_VERTICAL} {color_code(error_input[line_index])}\n"
                     else:
-                        display_code += f"  {LIGHT_VERTICAL}\t{termcolor.colored(line_index + 1, *get_color(3))}{LIGHT_VERTICAL} {color_code(error_input[line_index])}\n"
+                        display_line_number = RIGHTWARDS_ARROW + ' ' + str(line_num)
+                        display_line_number = display_line_number.rjust(len(str(len(error_input) + 1)) - len(display_line_number) + 5)
+                        display_code += f"  {LIGHT_VERTICAL}  {termcolor.colored(display_line_number, *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n"
+                    
                 tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  File {termcolor.colored(filename, *get_color(4))}" \
                            f":{termcolor.colored(line_num, *get_color(5))}, " \
                            f"at{termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \

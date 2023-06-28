@@ -41,6 +41,7 @@ logo = ""
 user_data = [None, None, None, None]
 user_storage = sys.stdin
 tb_list = []
+debug_f = False
 
 # set the charactars
 LIGHT_VERTICAL_AND_RIGHT = unicodedata.lookup("BOX DRAWINGS LIGHT VERTICAL AND RIGHT") # U+251C
@@ -61,10 +62,6 @@ user_storage_file = ".\\.shell\\user_storage.json"
 log_file = ".\\.shell\\init_log.LOG"
 
 logger = logging.getLogger(__name__)
-if __debug__:
-    logger.setLevel(logging.DEBUG)
-else:
-    logger.setLevel(logging.CRITICAL)
 file_handler = logging.FileHandler(log_file)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
@@ -133,6 +130,8 @@ class Extensions_Commands:
 
 
 def set_commands():
+    global debug_f
+
     @Extensions_Commands
     def Exit(*args, **kwargs): # although we didn't use it in this code, but we used it in the shell
         """A safe way to exit the shell."""
@@ -239,7 +238,24 @@ def set_commands():
                 anwser = modified_input(f"Are you sure you want to clear all the data? [Y(yes)/N(no)]: ")
                 if anwser == "Y":
                     os.system("cls")
-                    init()
+                    In = []
+                    Out = {}
+                    theme = "black"
+                    user_gbs = {"__name__": "__main__",
+                                "__doc__": banner,
+                                "__package__": None,
+                                "__spec__": None,
+                                "__annotations__": {},
+                                "__loader__": None,
+                                "In": In,
+                                "Out": Out,
+                                "__dict__": user_gbs,
+                                "_": None,
+                                "extend_commands": Extensions_Commands,
+                                "modules": modules}
+                    load_user_modules()
+                    user_gbs["modules"] = user_gbs["modules"]()
+                    set_commands()
                     break
                 elif anwser == "N":
                     break
@@ -247,7 +263,24 @@ def set_commands():
         else:
             if args[0] == "Y":
                 os.system("cls")
-                init()
+                In = []
+                Out = {}
+                theme = "black"
+                user_gbs = {"__name__": "__main__",
+                            "__doc__": banner,
+                            "__package__": None,
+                            "__spec__": None,
+                            "__annotations__": {},
+                            "__loader__": None,
+                            "In": In,
+                            "Out": Out,
+                            "__dict__": user_gbs,
+                            "_": None,
+                            "extend_commands": Extensions_Commands,
+                            "modules": modules}
+                load_user_modules()
+                user_gbs["modules"] = user_gbs["modules"]()
+                set_commands()
             return repr(args[0])
 
     @Extensions_Commands
@@ -269,7 +302,7 @@ def set_commands():
         os.system("cls")
         return ""
 
-    if __debug__:
+    if debug_f:
         @Extensions_Commands
         def restart(*args, **kwargs): # usage same as the cls func
             """Restart the shell. It will clear all the data."""
@@ -395,7 +428,7 @@ def modified_traceback(exc):
     """
     A modified version of python's traceback
     """
-    global code, In, user_gbs
+    global code, In, user_gbs, debug_f
     line = f'{LIGHT_HORIZONTAL}' * 50
     traceback_list = traceback.extract_tb(exc.__traceback__)
     result = ""
@@ -403,7 +436,7 @@ def modified_traceback(exc):
     err_count = 0
     for tb in traceback_list:
         filename, line_num, func_name, error_code = tb
-        if (filename in __file__) and (not __debug__):
+        if (filename in __file__) and (not debug_f):
             continue
 
         err_func_type = ""
@@ -543,7 +576,7 @@ def modified_write(string, color=colors[theme][8], on_color=theme, **kwargs):
     _write(termcolor.colored(string, color, "on_" + on_color), **kwargs)
 
 
-def init(run_before=False):
+def init():
     """
     Initalize the whole shell:
         Set up the environment vars
@@ -568,8 +601,14 @@ def init(run_before=False):
            banner, \
            user_data, \
            logger, \
-           logo
+           logo, \
+           debug_f
     
+    if debug_f:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.CRITICAL)
+
     run_from_console = False
     if sys.platform == "win32":
         kernel32 = ctypes.windll.kernel32
@@ -580,7 +619,7 @@ def init(run_before=False):
         if sys.__stdin__:
             run_from_console = True
     if not run_from_console:
-        if not __debug__:
+        if not debug_f:
             sys.stderr.write("\nCouldn't detect console window, you need to run this program in a terminal.\n")
             sys.exit()
     logger.info(f"This is my_python_shell on {sys.platform} terminal")
@@ -696,8 +735,7 @@ def main():
 
 
 if not (__name__ == "__main__"):
-    init()
-    __all__ = ["main", "init", "Extensions_Commands"]
+    __all__ = ["main", "init", "Extensions_Commands", "debug_f"]
 else:
     sys.stderr.write("Please run this script by __main__.py\n")
     sys.stderr.flush()

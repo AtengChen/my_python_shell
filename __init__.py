@@ -41,7 +41,7 @@ logo = ""
 user_data = [None, None, None, None]
 user_storage = sys.stdin
 tb_list = []
-debug_f = False
+debug_f = None
 
 # set the charactars
 LIGHT_VERTICAL_AND_RIGHT = unicodedata.lookup("BOX DRAWINGS LIGHT VERTICAL AND RIGHT") # U+251C
@@ -237,7 +237,6 @@ def set_commands():
             while True:
                 anwser = modified_input(f"Are you sure you want to clear all the data? [Y(yes)/N(no)]: ")
                 if anwser == "Y":
-                    os.system("cls")
                     In = []
                     Out = {}
                     theme = "black"
@@ -262,7 +261,6 @@ def set_commands():
             return repr(anwser)
         else:
             if args[0] == "Y":
-                os.system("cls")
                 In = []
                 Out = {}
                 theme = "black"
@@ -363,7 +361,7 @@ def load_user_data(storage_file=user_storage_file):
         sys.stdout.write(result)
         sys.stdout.write("\nPlease clear your data\n")
         sys.stdout.flush()
-    os.system("cls")
+        os.system("cls")
     user_storage = open(user_storage_file, "w")
 
 

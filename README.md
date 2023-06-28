@@ -31,9 +31,11 @@ pip install -r requirements.txt
 
 1. Open a terminal and navigate to the project directory.
 
-2. Run the Python shell by executing the following command:
+2. Run the Python shell by executing the following command format:
 
+```
 my_python_shell.bat [-h] [-d DEBUG]
+```
 
 3. You should now see the My Python Shell welcome message and the interactive prompt.
 

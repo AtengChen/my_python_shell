@@ -9,4 +9,18 @@ delattr(__import__(__name__), "__file__")
 setattr(__import__(__name__), "__loader__", None)
 
 if __name__ == "__main__":
-    __import__("__init__").main()
+    import __init__, argparse
+    parser = argparse.ArgumentParser(description='My Python Shell')
+    parser.add_argument("-d", "--debug", help="Debugging mode", type=int, default=0)
+    
+    args = parser.parse_args()
+    if args.debug:
+        __init__.debug_f = True
+    else:
+        __init__.debug_f = False
+    
+    get_my_python_shell = __init__
+    
+    del argparse, __init__
+    get_my_python_shell.init()
+    get_my_python_shell.main()

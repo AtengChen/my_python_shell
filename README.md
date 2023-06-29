@@ -29,21 +29,29 @@ pip install -r requirements.txt
 
 ### Usage
 
+#### Before starting the shell
 1. Open a terminal and navigate to the project directory.
 
 2. Run the Python shell by executing the following command format:
 
 ```
-my_python_shell.bat [-h] [-d DEBUG]
+my_python_shell.bat [-h] [-d DEBUG] [--prettytb PRETTYTB]
 ```
+The usage of the options is like this:
+```
+  -h, --help            show this help message and exit
+  -d DEBUG, --debug DEBUG
+                        Debugging mode
+  --prettytb PRETTYTB   Formatted traceback
+```
+#### After starting the shell
+1. You should now see the My Python Shell welcome message and the interactive prompt.
 
-3. You should now see the My Python Shell welcome message and the interactive prompt.
+2. Enter your Python code at the prompt and press Enter to execute it.
 
-4. Enter your Python code at the prompt and press Enter to execute it.
+3. View the output of your code and continue entering new code snippets as needed.
 
-5. View the output of your code and continue entering new code snippets as needed.
-
-6. To exit the shell, you can use the `exit` command or press Ctrl+Z and enter.
+4. To exit the shell, you can use the `exit` command or press Ctrl+Z and enter.
 
 ## Examples
 

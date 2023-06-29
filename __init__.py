@@ -222,7 +222,7 @@ def set_commands():
             res = os.popen(cmd).read()
             if res:
                 for i in res.split("\n"):
-                    sys.stdout.write(f"       {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
+                    sys.stdout.write(f"      {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
             return repr(cmd)
         res = os.popen(args[0]).read()
         if res:
@@ -427,7 +427,7 @@ def modified_traceback(exc):
     """
     A modified version of python's traceback
     """
-    global code, In, user_gbs, debug_f
+    global code, In, user_gbs, debug_f, pretty_traceback
 
     line = f'{LIGHT_HORIZONTAL}' * 50
     traceback_list = traceback.extract_tb(exc.__traceback__)
@@ -438,11 +438,15 @@ def modified_traceback(exc):
         filename, line_num, func_name, error_code = tb
         if (filename in __file__) and (not debug_f):
             continue
-
         err_func_type = ""
         if func_name == "<module>":
-            error_code = code
-            err_func_type = " " + "module"
+            try:
+                match_filename(filename)
+            except AttributeError:
+                pass
+            else:
+                error_code = code
+                err_func_type = " " + "module"
         else:
             if func_name in user_gbs:
                 err_func_type = " " + type(user_gbs[func_name]).__name__

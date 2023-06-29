@@ -42,6 +42,7 @@ user_data = [None, None, None, None]
 user_storage = sys.stdin
 tb_list = []
 debug_f = None
+pretty_traceback = None
 
 # set the charactars
 LIGHT_VERTICAL_AND_RIGHT = unicodedata.lookup("BOX DRAWINGS LIGHT VERTICAL AND RIGHT") # U+251C
@@ -427,6 +428,7 @@ def modified_traceback(exc):
     A modified version of python's traceback
     """
     global code, In, user_gbs, debug_f
+
     line = f'{LIGHT_HORIZONTAL}' * 50
     traceback_list = traceback.extract_tb(exc.__traceback__)
     result = ""
@@ -713,7 +715,7 @@ def main():
     """
     Main part of the shell
     """
-    global exec_flag, user_gbs, frame_name, prompt, err_pattern, interact_f, code, exit_f, tb_list
+    global exec_flag, user_gbs, frame_name, prompt, err_pattern, interact_f, code, exit_f, tb_list, pretty_traceback
     interact_f = True
     try:
         while True:
@@ -721,9 +723,11 @@ def main():
                 code = input_code()
                 parse_code(code)
             except Exception as e:
-                Out[code] = str(e)
-                error_str = traceback.format_exc()
-                result = modified_traceback(e)
+                Out[len(In)] = str(e)
+                if pretty_traceback:
+                    result = modified_traceback(e)
+                else:
+                    result = traceback.format_exc()
                 sys.stdout.write(result)
                 tb_list.append(result)
             else:
@@ -735,7 +739,7 @@ def main():
 
 
 if not (__name__ == "__main__"):
-    __all__ = ["main", "init", "Extensions_Commands", "debug_f"]
+    __all__ = ["main", "init", "Extensions_Commands", "debug_f", "pretty_traceback"]
 else:
     sys.stderr.write("Please run this script by __main__.py\n")
     sys.stderr.flush()

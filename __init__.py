@@ -506,6 +506,8 @@ def parse_code(inp_code):
     if len(mod.body):
         exec(compile(mod, frame_name, mode='exec'), user_gbs, user_gbs)
         Out[inp_code] = ""
+        return
+
     if expr is not None:
         sys.displayhook(eval(compile(expr, frame_name, mode='eval'), user_gbs, user_gbs))
 

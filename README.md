@@ -35,14 +35,14 @@ pip install -r requirements.txt
 2. Run the Python shell by executing the following command format:
 
 ```
-my_python_shell.bat [-h] [-d DEBUG] [--prettytb PRETTYTB]
+my_python_shell.bat [-h] [-d] [-prtb] [-a]
 ```
 The usage of the options is like this:
 ```
-  -h, --help            show this help message and exit
-  -d DEBUG, --debug DEBUG
-                        Debugging mode
-  --prettytb PRETTYTB   Formatted traceback
+  -h, --help           show this help message and exit
+  -d, --debug          Debugging mode
+  -prtb, --noprettytb  Formatted traceback
+  -a, --ascii          Enable ascii charactars
 ```
 #### After starting the shell
 1. You should now see the My Python Shell welcome message and the interactive prompt.

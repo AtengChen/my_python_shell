@@ -14,7 +14,6 @@ import pygments.lexers      #
 import re                   # matching file names
 import sys                  # 
 import termcolor            # color of the terminal, needs to install it from pip
-import time                 #
 import traceback            # capture the error info and color it
 import unicodedata          # print unicode charactars
 import webbrowser           # only for an extension command
@@ -43,16 +42,16 @@ user_storage = sys.stdin
 tb_list = []
 debug_f = None
 pretty_traceback = None
+enable_ascii = None
 
-# set the charactars
-LIGHT_VERTICAL_AND_RIGHT = unicodedata.lookup("BOX DRAWINGS LIGHT VERTICAL AND RIGHT") # U+251C
-LIGHT_UP_AND_RIGHT = unicodedata.lookup("BOX DRAWINGS LIGHT UP AND RIGHT") # U+2514
-LIGHT_DOWN_AND_RIGHT = unicodedata.lookup("BOX DRAWINGS LIGHT DOWN AND RIGHT") # U+250C
-LIGHT_HORIZONTAL = unicodedata.lookup("BOX DRAWINGS LIGHT HORIZONTAL") # U+2500
-LIGHT_VERTICAL = unicodedata.lookup("BOX DRAWINGS LIGHT VERTICAL") # U+2502
-LIGHT_ARC_DOWN_AND_RIGHT = unicodedata.lookup("BOX DRAWINGS LIGHT ARC DOWN AND RIGHT") # U+256D
-LIGHT_ARC_UP_AND_RIGHT = unicodedata.lookup("BOX DRAWINGS LIGHT ARC UP AND RIGHT") # U+2570
-RIGHTWARDS_ARROW = unicodedata.lookup("RIGHTWARDS ARROW") # U+2192
+LIGHT_VERTICAL_AND_RIGHT        =   "  "
+LIGHT_UP_AND_RIGHT              =   "  "
+LIGHT_DOWN_AND_RIGHT            =   "  "
+LIGHT_HORIZONTAL                =   "  "
+LIGHT_VERTICAL                  =   "  "
+LIGHT_ARC_DOWN_AND_RIGHT        =   "  "
+LIGHT_ARC_UP_AND_RIGHT          =   "  "
+RIGHTWARDS_ARROW                =   "  "
 
 try:
     os.mkdir(".shell")
@@ -173,15 +172,17 @@ def set_commands():
         if not args:
             sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  History:\n")
             if Out:
-                sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \tinputs\t\t\toutputs\n")
-                for i, o in Out.items():
+                sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \tinput_index\t\tinputs\t\t\toutputs\n")
+                for idx, io in Out.items():
+                    i, o = io
                     if len(i) > 10:
                         i = i[:10]
                         i += "..."
-                    if len(o) > 10:
-                        o = o[:10]
+                    o = o.split("\n")[0]
+                    if len(o) > 20:
+                        o = o[:20]
                         o += "..."
-                    sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{color_code(i)}\t\t\t{o}\n")
+                    sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{idx}\t\t\t{color_code(i)}\t\t\t{o}\n")
                 sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n")
                 return ""
             sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \tYou don't have any inputs yet! \n{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n")
@@ -384,9 +385,12 @@ def get_color(idx):
     global colors, theme
     return (colors[theme][idx], "on_" + theme)
 
-def modified_input(text="", symbol=LIGHT_VERTICAL_AND_RIGHT):
-    global prompt, _input
-    return _input(f"{' ' * (len(prompt) - 15)}{symbol}  {text}")
+def modified_input(text="", symbol=""):
+    global prompt, _input, LIGHT_VERTICAL_AND_RIGHT
+    if symbol:
+        return _input(f"{' ' * (len(prompt) - 15)}{symbol}  {text}")
+    else:
+        return _input(f"{' ' * (len(prompt) - 15)}{LIGHT_VERTICAL_AND_RIGHT}  {text}")
 
 def match_filename(name):
     """
@@ -412,7 +416,7 @@ def modified_displayhook(obj):
     try:
         if obj is not None:
             repr_obj = pprint.pformat(obj, indent=4) if hasattr(obj, "__iter__") else repr(obj)
-            Out[In[-1]] = repr_obj
+            Out[len(In)] = (In[-1], repr_obj)
             user_gbs["_"] = obj
             if "\n" in repr_obj:
                 sys.stdout.write(f"{' ' * (len(prompt) - 15)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": \n\n{repr_obj}\n")
@@ -490,7 +494,7 @@ def modified_traceback(exc):
         result += line + "\n"
     else:
         err_cause = f": {exc}" if str(exc) else ""
-        result += termcolor.colored(f"\n{type(exc).__name__}{err_cause}\n", *get_color(7))
+        result += termcolor.colored(f"\nInternal Error: {type(exc).__name__}{err_cause}\n", *get_color(7))
     return result
 
 
@@ -511,7 +515,7 @@ def parse_code(inp_code):
 
     if len(mod.body):
         exec(compile(mod, frame_name, mode='exec'), user_gbs, user_gbs)
-        Out[inp_code] = ""
+        Out[len(In)] = (inp_code, "")
         return
 
     if expr is not None:
@@ -600,7 +604,6 @@ def init():
            _exit, \
            exit_f, \
            prompt, \
-           err_pattern, \
            interact_f, \
            colors, \
            theme, \
@@ -608,7 +611,18 @@ def init():
            user_data, \
            logger, \
            logo, \
-           debug_f
+           debug_f, \
+           enable_ascii, \
+           \
+           LIGHT_VERTICAL_AND_RIGHT, \
+           LIGHT_UP_AND_RIGHT, \
+           LIGHT_DOWN_AND_RIGHT, \
+           LIGHT_HORIZONTAL, \
+           LIGHT_VERTICAL, \
+           LIGHT_ARC_DOWN_AND_RIGHT, \
+           LIGHT_ARC_UP_AND_RIGHT, \
+           RIGHTWARDS_ARROW
+
     
     if debug_f:
         logger.setLevel(logging.DEBUG)
@@ -628,13 +642,32 @@ def init():
         if not debug_f:
             sys.stderr.write("\nCouldn't detect console window, you need to run this program in a terminal.\n")
             sys.exit()
+
     logger.info(f"This is my_python_shell on {sys.platform} terminal")
     logger.info(f"Current time: {datetime.datetime.now()}")
     logger.info("Initializing terminal")
     colorama.init()
     logger.info("Initializing terminal complete")
-
-    err_pattern = r'File "(.*?)", line (\d+), in (.*?)\n(.*?)\n'
+    
+    # set the charactars
+    if not enable_ascii:
+        LIGHT_VERTICAL_AND_RIGHT        =   unicodedata.lookup("BOX DRAWINGS LIGHT VERTICAL AND RIGHT") # U+251C
+        LIGHT_UP_AND_RIGHT              =   unicodedata.lookup("BOX DRAWINGS LIGHT UP AND RIGHT")       # U+2514
+        LIGHT_DOWN_AND_RIGHT            =   unicodedata.lookup("BOX DRAWINGS LIGHT DOWN AND RIGHT")     # U+250C
+        LIGHT_HORIZONTAL                =   unicodedata.lookup("BOX DRAWINGS LIGHT HORIZONTAL")         # U+2500
+        LIGHT_VERTICAL                  =   unicodedata.lookup("BOX DRAWINGS LIGHT VERTICAL")           # U+2502
+        LIGHT_ARC_DOWN_AND_RIGHT        =   unicodedata.lookup("BOX DRAWINGS LIGHT ARC DOWN AND RIGHT") # U+256D
+        LIGHT_ARC_UP_AND_RIGHT          =   unicodedata.lookup("BOX DRAWINGS LIGHT ARC UP AND RIGHT")   # U+2570
+        RIGHTWARDS_ARROW                =   unicodedata.lookup("RIGHTWARDS ARROW")                      # U+2192
+    else:
+        LIGHT_VERTICAL_AND_RIGHT        =   r"|-"
+        LIGHT_UP_AND_RIGHT              =   r"\-"
+        LIGHT_DOWN_AND_RIGHT            =   r"/-"
+        LIGHT_HORIZONTAL                =   r"--"
+        LIGHT_VERTICAL                  =   r"| "
+        LIGHT_ARC_DOWN_AND_RIGHT        =   r"r-"
+        LIGHT_ARC_UP_AND_RIGHT          =   r"+-"
+        RIGHTWARDS_ARROW                =   r"->"
 
     load_user_data()
     user_gbs = {"__name__": "__main__",
@@ -727,7 +760,7 @@ def main():
                 code = input_code()
                 parse_code(code)
             except Exception as e:
-                Out[len(In)] = str(e)
+                Out[len(In)] = (code, termcolor.colored(e, *get_color(7)))
                 if pretty_traceback:
                     result = modified_traceback(e)
                 else:

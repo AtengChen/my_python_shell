@@ -42,7 +42,7 @@ my_python_shell.bat [-h] [-d] [-nprtb] [-a] [-ncres]
 python . [-h] [-d] [-nprtb] [-a] [-ncres]
 ```
 
-The usage of the options is like this:
+Usage of the options:
 ```
   -h, --help            show this help message and exit
   -d, --debug           Debugging mode

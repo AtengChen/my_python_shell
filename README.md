@@ -34,15 +34,22 @@ pip install -r requirements.txt
 
 2. Run the Python shell by executing the following command format:
 
+ - ```
+my_python_shell.bat [-h] [-d] [-nprtb] [-a] [-ncres]
 ```
-my_python_shell.bat [-h] [-d] [-prtb] [-a]
+or
+ - ```
+python . [-h] [-d] [-nprtb] [-a] [-ncres]
 ```
+
 The usage of the options is like this:
 ```
-  -h, --help           show this help message and exit
-  -d, --debug          Debugging mode
-  -prtb, --noprettytb  Formatted traceback
-  -a, --ascii          Enable ascii charactars
+  -h, --help            show this help message and exit
+  -d, --debug           Debugging mode
+  -nprtb, --noprettytb  Formatted traceback
+  -a, --ascii           Enable ascii charactars
+  -ncres, --nocopyresult
+                        Don't copy the result of a expression after evaluating it
 ```
 #### After starting the shell
 1. You should now see the My Python Shell welcome message and the interactive prompt.

@@ -11,6 +11,7 @@ import pprint               # pretty display of the displayhook
 import pygments             # replace the keywords and builtin-functions with the different colors, needs to install it from pip
 import pygments.formatters  #
 import pygments.lexers      #
+import pyperclip            # copying the result
 import re                   # matching file names
 import sys                  # 
 import termcolor            # color of the terminal, needs to install it from pip
@@ -43,6 +44,7 @@ tb_list = []
 debug_f = None
 pretty_traceback = None
 enable_ascii = None
+copy_result = None
 
 LIGHT_VERTICAL_AND_RIGHT        =   "  "
 LIGHT_UP_AND_RIGHT              =   "  "
@@ -411,7 +413,7 @@ def modified_displayhook(obj):
     """
     The modified version of sys.displayhook
     """
-    global Out, In, user_gbs, user_storage
+    global Out, In, user_gbs, user_storage, copy_result
     try:
         if obj is not None:
             repr_obj = pprint.pformat(obj, indent=4) if hasattr(obj, "__iter__") else repr(obj)
@@ -422,6 +424,8 @@ def modified_displayhook(obj):
             else:
                 sys.stdout.write(f"{' ' * (len(prompt) - 15)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": {repr_obj}\n")
             sys.stdout.write(f"\x1b]0;My python shell - {repr_obj}\x07\r\n")
+            if copy_result:
+                pyperclip.copy(repr_obj)
     except IndexError: # if encounters a bug
         sys.__displayhook__(obj)
 
@@ -778,7 +782,7 @@ def main():
 
 
 if not (__name__ == "__main__"):
-    __all__ = ["main", "init", "Extensions_Commands", "debug_f", "pretty_traceback"]
+    __all__ = ["main", "init", "Extensions_Commands", "debug_f", "pretty_traceback", "copy_result"]
 else:
     sys.stderr.write("Please run this script by __main__.py\n")
     sys.stderr.flush()

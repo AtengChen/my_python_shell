@@ -1,6 +1,7 @@
 import atexit               # register an atexit func
 import ast                  # check the input is executed by eval or exec
 import builtins             # modify its functions and get the builtin-function list
+import collections          # store the config data
 import colorama             # initalize the terminal, needs to install it from pip
 import ctypes               # Windows console api
 import datetime             # only for an extension command
@@ -16,6 +17,7 @@ import re                   # matching file names
 import sys                  # 
 import termcolor            # color of the terminal, needs to install it from pip
 import traceback            # capture the error info and color it
+import types                # get NoneType
 import unicodedata          # print unicode charactars
 import webbrowser           # only for an extension command
 
@@ -41,10 +43,7 @@ logo = ""
 user_data = [None, None, None, None]
 user_storage = sys.stdin
 tb_list = []
-debug_f = None
-pretty_traceback = None
-enable_ascii = None
-copy_result = None
+config = collections.defaultdict(types.NoneType)
 
 LIGHT_VERTICAL_AND_RIGHT        =   "  "
 LIGHT_UP_AND_RIGHT              =   "  "
@@ -132,7 +131,7 @@ class Extensions_Commands:
 
 
 def set_commands():
-    global debug_f
+    global config
 
     @Extensions_Commands
     def Exit(*args, **kwargs): # although we didn't use it in this code, but we used it in the shell
@@ -303,7 +302,7 @@ def set_commands():
         os.system("cls")
         return ""
 
-    if debug_f:
+    if config["debug_f"]:
         @Extensions_Commands
         def restart(*args, **kwargs): # usage same as the cls func
             """Restart the shell. It will clear all the data."""
@@ -413,7 +412,7 @@ def modified_displayhook(obj):
     """
     The modified version of sys.displayhook
     """
-    global Out, In, user_gbs, user_storage, copy_result
+    global Out, In, user_gbs, user_storage, config
     try:
         if obj is not None:
             repr_obj = pprint.pformat(obj, indent=4) if hasattr(obj, "__iter__") else repr(obj)
@@ -424,7 +423,7 @@ def modified_displayhook(obj):
             else:
                 sys.stdout.write(f"{' ' * (len(prompt) - 15)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": {repr_obj}\n")
             sys.stdout.write(f"\x1b]0;My python shell - {repr_obj}\x07\r\n")
-            if copy_result:
+            if config["copy_result"]:
                 pyperclip.copy(repr_obj)
     except IndexError: # if encounters a bug
         sys.__displayhook__(obj)
@@ -434,7 +433,7 @@ def modified_traceback(exc):
     """
     A modified version of python's traceback
     """
-    global code, In, user_gbs, debug_f, pretty_traceback
+    global code, In, user_gbs, config
 
     line = f'{LIGHT_HORIZONTAL}' * 50
     traceback_list = traceback.extract_tb(exc.__traceback__)
@@ -443,7 +442,7 @@ def modified_traceback(exc):
     err_count = 0
     for tb in traceback_list:
         filename, line_num, func_name, error_code = tb
-        if (filename in __file__) and (not debug_f):
+        if (filename in __file__) and (not config["debug_f"]):
             continue
         err_func_type = ""
         if func_name == "<module>":
@@ -481,11 +480,7 @@ def modified_traceback(exc):
                     else:
                         display_line_number = RIGHTWARDS_ARROW + ' ' + str(line_num)
                         display_line_number = display_line_number.rjust(len(str(len(error_input) + 1)) - len(display_line_number) + 5)
-                        if not enable_ascii:
-                            display_code += f"  {LIGHT_VERTICAL}  {termcolor.colored(display_line_number, *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n"
-                        else:
-                            display_code += f"  {LIGHT_VERTICAL} {termcolor.colored(display_line_number, *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n"
-                    
+                        display_code += f"  {LIGHT_VERTICAL}  {termcolor.colored(display_line_number, *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n"
                 tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  File {termcolor.colored(filename, *get_color(4))}" \
                            f":{termcolor.colored(line_num, *get_color(5))}, " \
                            f"at{termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
@@ -617,8 +612,7 @@ def init():
            user_data, \
            logger, \
            logo, \
-           debug_f, \
-           enable_ascii, \
+           config, \
            \
            LIGHT_VERTICAL_AND_RIGHT, \
            LIGHT_UP_AND_RIGHT, \
@@ -630,7 +624,7 @@ def init():
            RIGHTWARDS_ARROW
 
     
-    if debug_f:
+    if config["debug_f"]:
         logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.CRITICAL)
@@ -645,7 +639,7 @@ def init():
         if sys.__stdin__:
             run_from_console = True
     if not run_from_console:
-        if not debug_f:
+        if not config["debug_f"]:
             sys.stderr.write("\nCouldn't detect console window, you need to run this program in a terminal.\n")
             sys.exit()
 
@@ -656,7 +650,7 @@ def init():
     logger.info("Initializing terminal complete")
     
     # set the charactars
-    if not enable_ascii:
+    if not config["enable_ascii"]:
         LIGHT_VERTICAL_AND_RIGHT        =   unicodedata.lookup("BOX DRAWINGS LIGHT VERTICAL AND RIGHT") # U+251C
         LIGHT_UP_AND_RIGHT              =   unicodedata.lookup("BOX DRAWINGS LIGHT UP AND RIGHT")       # U+2514
         LIGHT_DOWN_AND_RIGHT            =   unicodedata.lookup("BOX DRAWINGS LIGHT DOWN AND RIGHT")     # U+250C
@@ -767,7 +761,7 @@ def main():
                 parse_code(code)
             except Exception as e:
                 Out[len(In)] = (code, termcolor.colored(e, *get_color(7)))
-                if pretty_traceback:
+                if config["pretty_traceback"]:
                     result = modified_traceback(e)
                 else:
                     result = traceback.format_exc()
@@ -782,7 +776,7 @@ def main():
 
 
 if not (__name__ == "__main__"):
-    __all__ = ["main", "init", "Extensions_Commands", "debug_f", "pretty_traceback", "copy_result"]
+    __all__ = ["main", "init", "Extensions_Commands", "config"]
 else:
     sys.stderr.write("Please run this script by __main__.py\n")
     sys.stderr.flush()

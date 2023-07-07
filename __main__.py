@@ -15,10 +15,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    __init__.debug_f = args.debug
-    __init__.pretty_traceback = not args.noprettytb
-    __init__.enable_ascii = args.ascii
-    __init__.copy_result = not args.nocopyresult
+    __init__.config["debug_f"] = args.debug
+    __init__.config["pretty_traceback"] = not args.noprettytb
+    __init__.config["enable_ascii"] = args.ascii
+    __init__.config["copy_result"] = not args.nocopyresult
     
     get_my_python_shell = __init__
     

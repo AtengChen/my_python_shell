@@ -224,7 +224,7 @@ def set_commands():
             for i in res.split("\n"):
                 sys.stdout.write(f"      {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
         return repr(args[0])
-
+    
     @Extensions_Commands
     def clear_data(*args, **kwargs): # usage same as the open_terminal func
         """Clear all the history of the shell."""
@@ -276,26 +276,26 @@ def set_commands():
                 user_gbs["modules"] = user_gbs["modules"]()
                 set_commands()
             return repr(args[0])
-
+    
     @Extensions_Commands
     def load_data(*args, **kwargs): # usage same as the clear_data func
         """Load a history file."""
         if repr(clear_data) == "clear_data('Y')":
             load_user_data(modified_input(f"Please enter your storage file's path: "))
         return ""
-
+    
     @Extensions_Commands
     def get_time(*args, **kwargs): # usage same as the load_data func
         """Get the current time."""
         sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Current time: {datetime.datetime.now()}\n")
         return ""
-
+    
     @Extensions_Commands
     def cls(*args, **kwargs): # usage same as the get_time func
         """Clear the screen."""
         os.system("cls")
         return ""
-
+    
     if config["debug_f"]:
         @Extensions_Commands
         def restart(*args, **kwargs): # usage same as the cls func
@@ -307,7 +307,7 @@ def set_commands():
             if not os.system(".\__main__.py"):
                 exit_f = False
                 _exit()
-
+    
     @Extensions_Commands
     def tb_history(*args, **kwargs): # usage same as the restart func
         """Get the shell's traceback history."""
@@ -326,9 +326,6 @@ def set_commands():
                 sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL}  \t{line}\n")
             sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL}  \n")
         return ""
-            
-
-
 
 
 def load_user_data(storage_file=user_storage_file):

@@ -41,7 +41,6 @@ theme = "black"
 banner = ""
 logo = ""
 user_data = [None, None, None, None]
-user_storage = sys.stdin
 tb_list = []
 config = collections.defaultdict(types.NoneType)
 
@@ -136,15 +135,14 @@ def set_commands():
     @Extensions_Commands
     def Exit(*args, **kwargs): # although we didn't use it in this code, but we used it in the shell
         """A safe way to exit the shell."""
-        global exit_f, In, Out, theme, user_storage, user_data, user_gbs
+        global exit_f
         if not args:
             while exit_f:
                 anwser = modified_input(f"Are you sure you want to exit? [Y(yes)/N(no)]: ")
                 if anwser == "Y":
                     exit_f = False
                     sys.stdout.write("Exiting ...\n")
-                    user_data = (In, Out, theme)
-                    json.dump(user_data, user_storage)
+                    save_data()
                     _exit()
                 elif anwser == "N":
                     return repr(anwser)
@@ -152,11 +150,7 @@ def set_commands():
         if (args[0] == "Y") and exit_f:
             exit_f = False
             sys.stdout.write("Exiting ...\n")
-            user_data = (In, Out, theme)
-            json.dump(user_data, user_storage)
-            user_storage.close()
-            sys.stdout.close()
-            sys.stdin.close()
+            save_data()
             _exit()
         else:
             return repr(args[0])
@@ -306,11 +300,10 @@ def set_commands():
         @Extensions_Commands
         def restart(*args, **kwargs): # usage same as the cls func
             """Restart the shell. It will clear all the data."""
-            global user_gbs, user_data, user_storage, exit_f
+            global user_gbs, user_data, exit_f
             if repr(user_gbs["clear_data"]) == "clear_data('N')":
                 return ""
-            user_data = (In, Out, theme)
-            json.dump(user_data, user_storage)
+            save_data()
             if not os.system(".\__main__.py"):
                 exit_f = False
                 _exit()
@@ -339,7 +332,7 @@ def set_commands():
 
 
 def load_user_data(storage_file=user_storage_file):
-    global In, Out, theme, user_storage, user_data, logger, user_storage_file, user_gbs
+    global In, Out, theme, user_data, logger, user_storage_file, user_gbs
     logger.info(f"Loading user storage `{storage_file}`")
     try:
         user_storage = open(storage_file, "r")
@@ -357,14 +350,12 @@ def load_user_data(storage_file=user_storage_file):
         Out = {}
         theme = "black"
         logger.error(f'Error opening {storage_file}: {e}')
-        error_str = traceback.format_exc()
         sys.stderr.write(f"Error ocurred when opening {storage_file}:\n")
         result = modified_traceback(e)
         sys.stdout.write(result)
         sys.stdout.write("\nPlease clear your data\n")
         sys.stdout.flush()
-        os.system("cls")
-    user_storage = open(user_storage_file, "w")
+        os.system("pause")
 
 
 def load_user_modules():
@@ -376,6 +367,12 @@ def load_user_modules():
                 setattr(user_gbs["modules"], m, imp)
             except Exception as e:
                 logger.error(f"Couldn't load module {m} due to error `{e}`")
+
+def save_data():
+    global user_data, In, Out, theme, user_storage_file
+    user_data = (In, Out, theme)
+    with open(user_storage_file, "w") as f:
+        json.dump(user_data, f)
 
 
 def get_color(idx):
@@ -412,7 +409,7 @@ def modified_displayhook(obj):
     """
     The modified version of sys.displayhook
     """
-    global Out, In, user_gbs, user_storage, config
+    global Out, In, user_gbs, config
     try:
         if obj is not None:
             repr_obj = pprint.pformat(obj, indent=4) if hasattr(obj, "__iter__") else repr(obj)
@@ -759,6 +756,7 @@ def main():
             try:
                 code = input_code()
                 parse_code(code)
+                save_data()
             except Exception as e:
                 Out[len(In)] = (code, termcolor.colored(e, *get_color(7)))
                 if config["pretty_traceback"]:

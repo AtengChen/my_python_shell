@@ -69,7 +69,7 @@ Here are a few examples to help you get started:
 In [1]╭→ msg = "hello world!"
 
 In [2]╭→ print(msg) # hello world!
-hello world!
+      ╰  hello world!
 
 In [3]╭→
 ```
@@ -83,7 +83,7 @@ In [2]╭→ b = 10
 In [3]╭→ result = a + b
 
 In [4]╭→ print(result) # 15
-15
+      ╰  15
 
 In [5]╭→
 ```
@@ -91,7 +91,7 @@ In [5]╭→
 3. Square root of 2
 ```
 In [1]╭→ print(modules.math.sqrt(10)) # 3.1622776601683795
-3.1622776601683795
+      ╰  3.1622776601683795
 
 In [2]╭→
 ```

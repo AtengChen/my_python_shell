@@ -33,6 +33,7 @@ code = ""
 _exit = sys.exit
 _write = sys.stdout.write
 _input = builtins.input
+_print = builtins.print
 exit_f = None
 err_pattern = r""
 interact_f = None
@@ -224,7 +225,7 @@ def set_commands():
             for i in res.split("\n"):
                 sys.stdout.write(f"      {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
         return repr(args[0])
-    
+
     @Extensions_Commands
     def clear_data(*args, **kwargs): # usage same as the open_terminal func
         """Clear all the history of the shell."""
@@ -276,26 +277,26 @@ def set_commands():
                 user_gbs["modules"] = user_gbs["modules"]()
                 set_commands()
             return repr(args[0])
-    
+
     @Extensions_Commands
     def load_data(*args, **kwargs): # usage same as the clear_data func
         """Load a history file."""
         if repr(clear_data) == "clear_data('Y')":
             load_user_data(modified_input(f"Please enter your storage file's path: "))
         return ""
-    
+
     @Extensions_Commands
     def get_time(*args, **kwargs): # usage same as the load_data func
         """Get the current time."""
         sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Current time: {datetime.datetime.now()}\n")
         return ""
-    
+
     @Extensions_Commands
     def cls(*args, **kwargs): # usage same as the get_time func
         """Clear the screen."""
         os.system("cls")
         return ""
-    
+
     if config["debug_f"]:
         @Extensions_Commands
         def restart(*args, **kwargs): # usage same as the cls func
@@ -307,7 +308,7 @@ def set_commands():
             if not os.system(".\__main__.py"):
                 exit_f = False
                 _exit()
-    
+
     @Extensions_Commands
     def tb_history(*args, **kwargs): # usage same as the restart func
         """Get the shell's traceback history."""
@@ -327,8 +328,11 @@ def set_commands():
             sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL}  \n")
         return ""
 
-
+    
 def load_user_data(storage_file=user_storage_file):
+    """
+    Loads the user data
+    """
     global In, Out, theme, user_data, logger, user_storage_file, user_gbs
     logger.info(f"Loading user storage `{storage_file}`")
     try:
@@ -356,6 +360,9 @@ def load_user_data(storage_file=user_storage_file):
 
 
 def load_user_modules():
+    """
+    Set the modules.
+    """
     global user_gbs, logger
     for m, imp in sys.modules.items():
         if not m.startswith("_"):
@@ -365,7 +372,11 @@ def load_user_modules():
             except Exception as e:
                 logger.error(f"Couldn't load module {m} due to error `{e}`")
 
+
 def save_data():
+    """
+    Saves the user's data to a JSON file.
+    """
     global user_data, In, Out, theme, user_storage_file
     user_data = (In, Out, theme)
     with open(user_storage_file, "w") as f:
@@ -379,12 +390,25 @@ def get_color(idx):
     global colors, theme
     return (colors[theme][idx], "on_" + theme)
 
+
 def modified_input(text="", symbol=""):
-    global prompt, _input, LIGHT_VERTICAL_AND_RIGHT
+    """
+    A modified version of builtins.input.
+    """
+    global prompt, _input
     if symbol:
         return _input(f"{' ' * (len(prompt) - 15)}{symbol}  {text}")
     else:
         return _input(f"{' ' * (len(prompt) - 15)}{LIGHT_VERTICAL_AND_RIGHT}  {text}")
+
+
+def modified_print(text="", *args, **kwargs):
+    """
+    A modified version of builtins.print.
+    """
+    global _print
+    _print(f"{' ' * (len(prompt) - 15)}{LIGHT_ARC_UP_AND_RIGHT}  {text}", *args, **kwargs)
+
 
 def match_filename(name):
     """
@@ -395,7 +419,7 @@ def match_filename(name):
 
 def on_exit():
     """
-    Ask user to exit
+    Ask user to exit.
     """
     global exit_f
     exit_f = True
@@ -404,7 +428,7 @@ def on_exit():
 
 def modified_displayhook(obj):
     """
-    The modified version of sys.displayhook
+    The modified version of sys.displayhook.
     """
     global Out, In, user_gbs, config
     try:
@@ -425,7 +449,7 @@ def modified_displayhook(obj):
 
 def modified_traceback(exc):
     """
-    A modified version of python's traceback
+    A modified version of python's traceback.
     """
     global code, In, user_gbs, config
 
@@ -495,7 +519,7 @@ def modified_traceback(exc):
 
 def parse_code(inp_code):
     """
-    Parse the code
+    Parse the code.
     """
     global frame_name, user_gbs, Out
     mod = ast.parse(inp_code, filename=frame_name)
@@ -518,6 +542,9 @@ def parse_code(inp_code):
 
 
 def code_is_complete(inp_code):
+    """
+    Check if the code is complete.
+    """
     try:
         ast.parse(inp_code, mode='exec')
         return True
@@ -526,6 +553,9 @@ def code_is_complete(inp_code):
 
 
 def input_code(pmt=None):
+    """
+    Inputs the code.
+    """
     global In, exec_flag, frame_name, prompt, exit_f, _input
     try:
         if not pmt:
@@ -571,12 +601,15 @@ def input_code(pmt=None):
 
 def color_code(code_string):
     """
-    colors the code.
+    Colors the code.
     """
     return pygments.highlight(code_string, pygments.lexers.PythonLexer(), pygments.formatters.TerminalFormatter(bg="dark")).split("\n")[0]
 
 
 def modified_write(string, color=colors[theme][8], on_color=theme, **kwargs):
+    """
+    A modified version of sys.stdout.
+    """
     global _write
     _write(termcolor.colored(string, color, "on_" + on_color), **kwargs)
 
@@ -702,6 +735,7 @@ def init():
         return repr(user_gbs["Exit"])
 
     builtins.input = modified_input
+    builtins.print = modified_print
 
     atexit.register(on_exit)
     logger.info("Registering exit-func successful")
@@ -776,6 +810,7 @@ else:
     sys.stderr.write("Please run this script by __main__.py\n")
     sys.stderr.flush()
     os.system("PAUSE")
+    os.system("CLS")
     
     if os.system(".\__main__.py"):
         raise Exception("`__main__.py` not found")

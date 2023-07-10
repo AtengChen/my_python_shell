@@ -150,6 +150,55 @@ Traceback (most recent call last):
 
 In [3]╭→
 ```
+5. Hello, number!
+```
+In [1]╭→ s = ""
+
+In [2]╭→ for i in range(10):
+      ├         s += f"Hello, {i}!\n"
+      ├
+
+In [3]╭→ s
+      ╰  Out[3]:
+
+('Hello, 0!\n'
+ 'Hello, 1!\n'
+ 'Hello, 2!\n'
+ 'Hello, 3!\n'
+ 'Hello, 4!\n'
+ 'Hello, 5!\n'
+ 'Hello, 6!\n'
+ 'Hello, 7!\n'
+ 'Hello, 8!\n'
+ 'Hello, 9!\n')
+
+
+In [4]╭→ print(s)
+      ├  Hello, 0!
+      ├  Hello, 1!
+      ├  Hello, 2!
+      ├  Hello, 3!
+      ├  Hello, 4!
+      ├  Hello, 5!
+      ├  Hello, 6!
+      ├  Hello, 7!
+      ├  Hello, 8!
+      ├  Hello, 9!
+      ╰
+
+In [5]╭→
+```
+6. What's your name?
+```
+In [1]╭→ name = input("What's your name? ")
+      ├  What's your name? Aten Chen
+
+In [2]╭→ print(name)
+      ╰  Aten Chen
+
+In [3]╭→
+```
+
 ## Extension commands
  ### commands
   - Type `Exit` or `exit` to exit.

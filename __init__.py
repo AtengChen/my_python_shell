@@ -5,6 +5,7 @@ import collections          # store the config data
 import colorama             # initalize the terminal, needs to install it from pip
 import ctypes               # Windows console api
 import datetime             # only for an extension command
+import inspect              # get the module name from a path
 import json                 # saving for history
 import logging              # log the init process
 import os                   # use cmd for controling background colors
@@ -218,7 +219,7 @@ def set_commands():
             res = os.popen(cmd).read()
             if res:
                 for i in res.split("\n"):
-                    sys.stdout.write(f"      {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
+                    sys.stdout.write(f"       {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
             return repr(cmd)
         res = os.popen(args[0]).read()
         if res:
@@ -330,9 +331,6 @@ def set_commands():
 
     
 def load_user_data(storage_file=user_storage_file):
-    """
-    Loads the user data
-    """
     global In, Out, theme, user_data, logger, user_storage_file, user_gbs
     logger.info(f"Loading user storage `{storage_file}`")
     try:
@@ -360,9 +358,6 @@ def load_user_data(storage_file=user_storage_file):
 
 
 def load_user_modules():
-    """
-    Set the modules.
-    """
     global user_gbs, logger
     for m, imp in sys.modules.items():
         if not m.startswith("_"):
@@ -374,9 +369,6 @@ def load_user_modules():
 
 
 def save_data():
-    """
-    Saves the user's data to a JSON file.
-    """
     global user_data, In, Out, theme, user_storage_file
     user_data = (In, Out, theme)
     with open(user_storage_file, "w") as f:
@@ -392,9 +384,6 @@ def get_color(idx):
 
 
 def modified_input(text="", symbol=""):
-    """
-    A modified version of builtins.input.
-    """
     global prompt, _input
     if symbol:
         return _input(f"{' ' * (len(prompt) - 15)}{symbol}  {text}")
@@ -403,11 +392,14 @@ def modified_input(text="", symbol=""):
 
 
 def modified_print(text="", *args, **kwargs):
-    """
-    A modified version of builtins.print.
-    """
-    global _print
-    _print(f"{' ' * (len(prompt) - 15)}{LIGHT_ARC_UP_AND_RIGHT}  {text}", *args, **kwargs)
+    global prompt, _print
+    text_list = text.split("\n")
+    if len(text_list) <= 1:
+        _print(f"{' ' * (len(prompt) - 15)}{LIGHT_ARC_UP_AND_RIGHT}  {text}", *args, **kwargs)
+    else:
+        for i in text_list[:-1]:
+            _print(f"{' ' * (len(prompt) - 15)}{LIGHT_VERTICAL_AND_RIGHT}  {i}")
+        _print(f"{' ' * (len(prompt) - 15)}{LIGHT_ARC_UP_AND_RIGHT}  {text_list[-1]}")
 
 
 def match_filename(name):
@@ -419,7 +411,7 @@ def match_filename(name):
 
 def on_exit():
     """
-    Ask user to exit.
+    Ask user to exit
     """
     global exit_f
     exit_f = True
@@ -428,7 +420,7 @@ def on_exit():
 
 def modified_displayhook(obj):
     """
-    The modified version of sys.displayhook.
+    The modified version of sys.displayhook
     """
     global Out, In, user_gbs, config
     try:
@@ -449,7 +441,7 @@ def modified_displayhook(obj):
 
 def modified_traceback(exc):
     """
-    A modified version of python's traceback.
+    A modified version of python's traceback
     """
     global code, In, user_gbs, config
 
@@ -470,19 +462,27 @@ def modified_traceback(exc):
                 pass
             else:
                 error_code = code
-                err_func_type = " " + "module"
+                err_func_type = "module"
+            filename = f"Module {termcolor.colored(filename, *get_color(4))}"
         else:
             if func_name in user_gbs:
-                err_func_type = " " + type(user_gbs[func_name]).__name__
+                err_func_type = type(user_gbs[func_name]).__name__
+            else:
+                err_func_type = "\b"
+            module_name = inspect.getmodulename(filename)
+            if module_name:
+                filename = f"Module {termcolor.colored(module_name, *get_color(4))}"
+            else:
+                filename = f"File {termcolor.colored(filename, *get_color(4))}"
         if isinstance(exc, RecursionError):
             err_count += 1
         if err_count > 4:
             tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  ...\n"
             break
         if error_code:
-            tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  File {termcolor.colored(filename, *get_color(4))}" \
+            tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  {filename}" \
                       f":{termcolor.colored(line_num, *get_color(5))}, " \
-                      f"at{termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
+                      f"at {termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
                       f"  {LIGHT_VERTICAL}\n  {LIGHT_VERTICAL}  {termcolor.colored(RIGHTWARDS_ARROW + ' ' + str(line_num), *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n  {LIGHT_VERTICAL}\n"
         else:
             try:
@@ -499,14 +499,14 @@ def modified_traceback(exc):
                         display_line_number = RIGHTWARDS_ARROW + ' ' + str(line_num)
                         display_line_number = display_line_number.rjust(len(str(len(error_input) + 1)) - len(display_line_number) + 5)
                         display_code += f"  {LIGHT_VERTICAL}  {termcolor.colored(display_line_number, *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n"
-                tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  File {termcolor.colored(filename, *get_color(4))}" \
+                tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  {filename}" \
                            f":{termcolor.colored(line_num, *get_color(5))}, " \
-                           f"at{termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
+                           f"at {termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
                            f"  {LIGHT_VERTICAL}\n{display_code}  {LIGHT_VERTICAL}\n"
             except (IndexError, AttributeError):
-                tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  File {termcolor.colored(filename, *get_color(4))}" \
+                tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  {filename}" \
                            f":{termcolor.colored(line_num, *get_color(5))}, " \
-                           f"at{termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}:\n"
+                           f"at {termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}:\n"
 
     if tb_main:
         result += f"{line}\nTraceback (most recent call last):\n{tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(type(exc).__name__, *get_color(7))}: {exc}\n"
@@ -519,7 +519,7 @@ def modified_traceback(exc):
 
 def parse_code(inp_code):
     """
-    Parse the code.
+    Parse the code
     """
     global frame_name, user_gbs, Out
     mod = ast.parse(inp_code, filename=frame_name)
@@ -542,9 +542,6 @@ def parse_code(inp_code):
 
 
 def code_is_complete(inp_code):
-    """
-    Check if the code is complete.
-    """
     try:
         ast.parse(inp_code, mode='exec')
         return True
@@ -553,9 +550,6 @@ def code_is_complete(inp_code):
 
 
 def input_code(pmt=None):
-    """
-    Inputs the code.
-    """
     global In, exec_flag, frame_name, prompt, exit_f, _input
     try:
         if not pmt:
@@ -601,15 +595,12 @@ def input_code(pmt=None):
 
 def color_code(code_string):
     """
-    Colors the code.
+    colors the code.
     """
     return pygments.highlight(code_string, pygments.lexers.PythonLexer(), pygments.formatters.TerminalFormatter(bg="dark")).split("\n")[0]
 
 
 def modified_write(string, color=colors[theme][8], on_color=theme, **kwargs):
-    """
-    A modified version of sys.stdout.
-    """
     global _write
     _write(termcolor.colored(string, color, "on_" + on_color), **kwargs)
 
@@ -810,7 +801,6 @@ else:
     sys.stderr.write("Please run this script by __main__.py\n")
     sys.stderr.flush()
     os.system("PAUSE")
-    os.system("CLS")
     
     if os.system(".\__main__.py"):
         raise Exception("`__main__.py` not found")

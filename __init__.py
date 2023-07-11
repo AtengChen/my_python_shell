@@ -83,20 +83,23 @@ class Extensions_Commands:
     def __new__(cls, func=None):
         global user_gbs, logger, interact_f
         if func:
-            def repr_func(self):
-                return f"{func.__name__}({func()})"
+            class _c:
+                def __repr__(self):
+                    return f"{self.f.__name__}({self.f()})"
+                
+                def __call__(self, *args, **kwargs):
+                    return f"{self.f.__name__}({self.f(*args, **kwargs)})"
+                
+                def __init__(self):
+                    self.f = func
+                    self.__doc__ = func.__doc__
 
-            def call_func(self, *args, **kwargs):
-                return f"{func.__name__}({func(*args, **kwargs)})"
-
-            def init_func(self):
-                self.f = func
-
-            _cls = type(func.__name__, (), {"__repr__": repr_func, "__call__": call_func, "__init__": init_func, "__doc__": func.__doc__})
+            _cls = type(func.__name__, (), {"__repr__": _c.__repr__, "__call__": _c.__call__, "__init__": _c.__init__})
             user_gbs[func.__name__] = _cls()
             setattr(user_gbs["extend_commands"], func.__name__, _cls())
             if not interact_f:
                 logger.info(f"Setting extension command {func.__name__} successful")
+            del _c
             return _cls()
         else:
             sys.stdout.write("Type `extend_commands.help_commands()` to see all the commands.\n")
@@ -128,9 +131,8 @@ class Extensions_Commands:
                         return True
             sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Couldn't find command `{cmd}`\n")
             return False
-
-
-
+    
+        
 def set_commands():
     global config
 
@@ -383,19 +385,22 @@ def get_color(idx):
     return (colors[theme][idx], "on_" + theme)
 
 
-def modified_input(text="", symbol=""):
-    global prompt, _input
-    if symbol:
-        return _input(f"{' ' * (len(prompt) - 15)}{symbol}  {text}")
-    else:
+def modified_input(text=""):
+    global prompt, _input, _print
+    text_list = str(text).split("\n")
+    if len(text_list) <= 1:
         return _input(f"{' ' * (len(prompt) - 15)}{LIGHT_VERTICAL_AND_RIGHT}  {text}")
+    else:
+        for i in text_list[:-1]:
+            _print(f"{' ' * (len(prompt) - 15)}{LIGHT_VERTICAL_AND_RIGHT}  {i}")
+        return _input(f"{' ' * (len(prompt) - 15)}{LIGHT_VERTICAL_AND_RIGHT}  {text_list[-1]}")
 
 
 def modified_print(text="", *args, **kwargs):
     global prompt, _print
-    text_list = text.split("\n")
+    text_list = str(text).split("\n")
     if len(text_list) <= 1:
-        _print(f"{' ' * (len(prompt) - 15)}{LIGHT_ARC_UP_AND_RIGHT}  {text}", *args, **kwargs)
+        _print(f"{' ' * (len(prompt) - 15)}{LIGHT_VERTICAL_AND_RIGHT}  {text}", *args, **kwargs)
     else:
         for i in text_list[:-1]:
             _print(f"{' ' * (len(prompt) - 15)}{LIGHT_VERTICAL_AND_RIGHT}  {i}")

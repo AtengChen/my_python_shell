@@ -184,7 +184,7 @@ In [4]╭→ print(s)
       ├  Hello, 7!
       ├  Hello, 8!
       ├  Hello, 9!
-      ╰
+      ├
 
 In [5]╭→
 ```
@@ -194,7 +194,7 @@ In [1]╭→ name = input("What's your name? ")
       ├  What's your name? Aten Chen
 
 In [2]╭→ print(name)
-      ╰  Aten Chen
+      ├  Aten Chen
 
 In [3]╭→
 ```

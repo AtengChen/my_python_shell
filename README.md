@@ -24,8 +24,9 @@ Welcome to My Python Shell! This is a Python shell that provides an interactive 
 
 3. Install the required dependencies by running the following command:
 
+```
 pip install -r requirements.txt
-
+```
 
 ### Usage
 
@@ -34,6 +35,11 @@ pip install -r requirements.txt
 
 2. Run the Python shell by executing the following command format:
 
+on Windows
+```
+my_python_shell.bat [-h] [-d] [-nprtb] [-a] [-ncres]
+```
+**or** on Linux
 ```
 my_python_shell.bat [-h] [-d] [-nprtb] [-a] [-ncres]
 ```

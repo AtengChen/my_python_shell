@@ -15,7 +15,7 @@ import pygments.formatters  #
 import pygments.lexers      #
 import pyperclip            # copying the result
 import re                   # matching file names
-import sys                  # 
+import sys                  #
 import termcolor            # color of the terminal, needs to install it from pip
 import traceback            # capture the error info and color it
 import types                # get NoneType
@@ -60,8 +60,8 @@ try:
 except FileExistsError:
     pass
 
-user_storage_file = ".\\.shell\\user_storage.json"
-log_file = ".\\.shell\\init_log.LOG"
+user_storage_file = "./.shell/user_storage.json"
+log_file = "./.shell/init_log.LOG"
 
 logger = logging.getLogger(__name__)
 file_handler = logging.FileHandler(log_file)
@@ -86,10 +86,10 @@ class Extensions_Commands:
             class _c:
                 def __repr__(self):
                     return f"{self.f.__name__}({self.f()})"
-                
+
                 def __call__(self, *args, **kwargs):
                     return f"{self.f.__name__}({self.f(*args, **kwargs)})"
-                
+
                 def __init__(self):
                     self.f = func
                     self.__doc__ = func.__doc__
@@ -131,8 +131,8 @@ class Extensions_Commands:
                         return True
             sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Couldn't find command `{cmd}`\n")
             return False
-    
-        
+
+
 def set_commands():
     global config
 
@@ -162,10 +162,10 @@ def set_commands():
     @Extensions_Commands
     def history(*args, **kwargs): # usage same as the Exit func
         """
-        View the history of the shell. 
+        View the history of the shell.
 
         Type `history` for the whole history
-        Type `history([history id])` for a specific input 
+        Type `history([history id])` for a specific input
         """
         global Out, In
         if not args:
@@ -202,7 +202,7 @@ def set_commands():
         theme = themes[(themes.index(theme) + 1) % len(themes)]
         os.system("cls")
         return ""
-    
+
     @Extensions_Commands
     def open_browser(*args, **kwargs): # usage same as the change_theme func
         """Open a URL in the browser"""
@@ -212,7 +212,7 @@ def set_commands():
             return repr(url)
         webbrowser.open(args[0])
         return args[0]
-    
+
     @Extensions_Commands
     def open_terminal(*args, **kwargs): # usage same as the open_browser func
         """Execute a CMD command"""
@@ -331,7 +331,7 @@ def set_commands():
             sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL}  \n")
         return ""
 
-    
+
 def load_user_data(storage_file=user_storage_file):
     global In, Out, theme, user_data, logger, user_storage_file, user_gbs
     logger.info(f"Loading user storage `{storage_file}`")
@@ -494,7 +494,7 @@ def modified_traceback(exc):
                 error_input = In[int(match_filename(filename)) - 1].split("\n")
                 error_code = error_input[line_num - 1]
                 display_code = ""
-                
+
                 for line_index in range(len(error_input)):
                     if not (line_index == line_num - 1):
                         display_line_number = str(line_index + 1)
@@ -646,7 +646,7 @@ def init():
            LIGHT_ARC_UP_AND_RIGHT, \
            RIGHTWARDS_ARROW
 
-    
+
     if config["debug_f"]:
         logger.setLevel(logging.DEBUG)
     else:
@@ -671,7 +671,7 @@ def init():
     logger.info("Initializing terminal")
     colorama.init()
     logger.info("Initializing terminal complete")
-    
+
     # set the charactars
     if not config["enable_ascii"]:
         LIGHT_VERTICAL_AND_RIGHT        =   unicodedata.lookup("BOX DRAWINGS LIGHT VERTICAL AND RIGHT") # U+251C
@@ -715,7 +715,7 @@ def init():
               "white": ["light_green", "light_blue", "light_green", "light_magenta", "green", "blue", "red", "green", "black", "yellow"]}
 
     sys.stdout.write = modified_write
-    
+
     logger.info("Setting theme successful")
 
     sys.stdout.write(f"\x1b]0;My python shell\x07\r")
@@ -737,12 +737,12 @@ def init():
     logger.info("Registering exit-func successful")
 
     sys.displayhook = modified_displayhook
-    
+
     prompt = termcolor.colored(f"\nIn [0]", *get_color(3))
     sys.ps1 = f"{prompt}{LIGHT_ARC_DOWN_AND_RIGHT}{RIGHTWARDS_ARROW} "
     sys.ps2 = f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}   "
     logger.info("Setting prompt successful")
-    
+
     logo = r"""
   __  __         _____       _   _                    _____ _          _ _
  |  \/  |       |  __ \     | | | |                  / ____| |        | | |
@@ -768,7 +768,7 @@ def init():
              f"\t\t\t\tHappy Using!\n\n\n"
 
     logger.info("Initializing shell successful.")
-    
+
     sys.stdout.write(banner)
 
 
@@ -806,6 +806,6 @@ else:
     sys.stderr.write("Please run this script by __main__.py\n")
     sys.stderr.flush()
     os.system("PAUSE")
-    
+
     if os.system(".\__main__.py"):
         raise Exception("`__main__.py` not found")

@@ -468,7 +468,7 @@ def modified_traceback(exc):
             else:
                 error_code = code
                 err_func_type = "module"
-            filename = f"Module {termcolor.colored(filename, *get_color(4))}"
+            display_filename = f"Shell {termcolor.colored(filename, *get_color(4))}"
         else:
             if func_name in user_gbs:
                 err_func_type = type(user_gbs[func_name]).__name__
@@ -476,16 +476,21 @@ def modified_traceback(exc):
                 err_func_type = "\b"
             module_name = inspect.getmodulename(filename)
             if module_name:
-                filename = f"Module {termcolor.colored(module_name, *get_color(4))}"
+                display_filename = f"Module {termcolor.colored(module_name, *get_color(4))}"
             else:
-                filename = f"File {termcolor.colored(filename, *get_color(4))}"
+                try:
+                    match_filename(filename)
+                except AttributeError:
+                    display_filename = f"File {termcolor.colored(filename, *get_color(4))}"
+                else:
+                    display_filename = f"Shell {termcolor.colored(filename, *get_color(4))}"
         if isinstance(exc, RecursionError):
             err_count += 1
         if err_count > 4:
             tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  ...\n"
             break
         if error_code:
-            tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  {filename}" \
+            tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  {display_filename}" \
                       f":{termcolor.colored(line_num, *get_color(5))}, " \
                       f"at {termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
                       f"  {LIGHT_VERTICAL}\n  {LIGHT_VERTICAL}  {termcolor.colored(RIGHTWARDS_ARROW + ' ' + str(line_num), *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n  {LIGHT_VERTICAL}\n"
@@ -504,12 +509,12 @@ def modified_traceback(exc):
                         display_line_number = RIGHTWARDS_ARROW + ' ' + str(line_num)
                         display_line_number = display_line_number.rjust(len(str(len(error_input) + 1)) - len(display_line_number) + 5)
                         display_code += f"  {LIGHT_VERTICAL}  {termcolor.colored(display_line_number, *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n"
-                tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  {filename}" \
+                tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  {display_filename}" \
                            f":{termcolor.colored(line_num, *get_color(5))}, " \
                            f"at {termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
                            f"  {LIGHT_VERTICAL}\n{display_code}  {LIGHT_VERTICAL}\n"
-            except (IndexError, AttributeError):
-                tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  {filename}" \
+            except (IndexError, AttributeError) as e:
+                tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  {display_filename}" \
                            f":{termcolor.colored(line_num, *get_color(5))}, " \
                            f"at {termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}:\n"
 

@@ -6,7 +6,7 @@ __doc__ = open(".\README.md", "r", encoding="UTF-8").read()
 __version__ = "0.8"
 
 if __name__ == "__main__":
-    import __init__, argparse
+    import __init__, argparse, sys
     parser = argparse.ArgumentParser(description='My Python Shell')
     parser.add_argument("-d", "--debug", help="Debugging mode", action='store_true')
     parser.add_argument("-nprtb", "--noprettytb", help="Formatted traceback", action='store_true')
@@ -26,6 +26,6 @@ if __name__ == "__main__":
 
     delattr(__import__(__name__), "__file__")
     setattr(__import__(__name__), "__loader__", None)
-
+    
     get_my_python_shell.init()
-    get_my_python_shell.main()
+    exit(get_my_python_shell.main())

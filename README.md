@@ -212,7 +212,7 @@ In [3]╭→
   - Type `load_data` to load a specific user storage file.
   - Type `open_browser` to open a webpage.
   - Type `open_terminal` to execute a terminal command.
-  - Type `restart` to restart the shell (Only for debugging options `-O`).
+  - Type `restart` to restart the shell (Only for debugging options `-d` or `--debug`).
   - Type `tb_history` for the whole traceback history.
  - Type `extend_commands.help_commands()` to see all the commands.
  - Type `extend_commands.help_commands('[your command here]')` for a specific command.

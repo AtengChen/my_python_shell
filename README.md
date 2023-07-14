@@ -34,13 +34,13 @@ pip install -r requirements.txt
 
 2. Run the Python shell by executing the following command format:
 
-** (Windows) **
+**Window**
 
 ```
 my_python_shell.bat [-h] [-d] [-nprtb] [-a] [-ncres]
 ```
 
-** (Linex) **
+**Linux**
 ```
 python . [-h] [-d] [-nprtb] [-a] [-ncres]
 ```

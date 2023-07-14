@@ -420,7 +420,12 @@ def on_exit():
     """
     global exit_f
     exit_f = True
-    return repr(builtins.exit)
+    try:
+        return repr(builtins.exit)
+    except Exception as e:
+        sys.stderr.write("My Python Shell Internal Error: \n" + modified_traceback(e))
+        exit_f = False
+        exit(1)
 
 
 def modified_displayhook(obj):
@@ -803,6 +808,7 @@ def main():
     except KeyboardInterrupt as e:
         sys.stderr.write(termcolor.colored(f"\nKeyboardInterrupt\n", *get_color(7)))
         main()
+    return 0
 
 
 if not (__name__ == "__main__"):

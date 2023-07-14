@@ -2,7 +2,6 @@
 
 from os import chdir, listdir, remove, system
 from os.path import dirname, join, abspath
-from platform import platform
 import sys
 
 chdir(join(dirname(__file__), ".shell"))

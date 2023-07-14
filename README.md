@@ -34,10 +34,13 @@ pip install -r requirements.txt
 
 2. Run the Python shell by executing the following command format:
 
+** (Windows) **
+
 ```
 my_python_shell.bat [-h] [-d] [-nprtb] [-a] [-ncres]
 ```
-**or**
+
+** (Linex) **
 ```
 python . [-h] [-d] [-nprtb] [-a] [-ncres]
 ```
@@ -213,6 +216,10 @@ In [3]╭→
   - Type `tb_history` for the whole traceback history.
  - Type `extend_commands.help_commands()` to see all the commands.
  - Type `extend_commands.help_commands('[your command here]')` for a specific command.
+
+## Want to clear your data?
+ - Type `clear_data.bat` in Windows.
+ - Type `clear_data.py` in Linux
 
 ## License
 

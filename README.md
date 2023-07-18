@@ -219,7 +219,8 @@ In [3]╭→
  ### Others
   - Type `extend_commands.help_commands()` to see all the commands.
   - Type `extend_commands.help_commands('[your command here]')` for a specific command.
-  - Type `win_term.['your cmd here'](['options-1'], ['options-2'], ['options-3'], ...)` (only on Windows.)
+  - Type `win_term.['your cmd here'](['options-1'], ['options-2'], ['options-3'], ...)`. (only on Windows.)
+ 
  *We await you to create your own commands and creates a more personal shell!*
 
 ## Want to clear your data?

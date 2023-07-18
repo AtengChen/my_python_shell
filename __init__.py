@@ -22,6 +22,8 @@ import types                # get NoneType
 import unicodedata          # print unicode charactars
 import webbrowser           # only for an extension command
 
+from cmd_utils import cmd_list, WINDOWS
+
 # set the default vars
 
 exec_flag = None
@@ -72,7 +74,6 @@ logger.addHandler(file_handler)
 
 class modules:
     pass
-
 
 class Extensions_Commands:
     """
@@ -213,24 +214,25 @@ def set_commands():
         webbrowser.open(args[0])
         return args[0]
     
-    @Extensions_Commands
-    def open_terminal(*args, **kwargs): # usage same as the open_browser func
-        """Execute a CMD command"""
-        if not args:
-            cmd = modified_input("Please enter your command: ")
-            res = os.popen(cmd).read()
+    if not WINDOWS:
+        @Extensions_Commands
+        def term(*args, **kwargs): # usage same as the open_browser func
+            """Execute a terminal command."""
+            if not args:
+                cmd = modified_input("Please enter your command: ")
+                res = os.popen(cmd).read()
+                if res:
+                    for i in res.split("\n"):
+                        sys.stdout.write(f"       {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
+                return repr(cmd)
+            res = os.popen(args[0]).read()
             if res:
                 for i in res.split("\n"):
-                    sys.stdout.write(f"       {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
-            return repr(cmd)
-        res = os.popen(args[0]).read()
-        if res:
-            for i in res.split("\n"):
-                sys.stdout.write(f"      {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
-        return repr(args[0])
+                    sys.stdout.write(f"      {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
+            return repr(args[0])
 
     @Extensions_Commands
-    def clear_data(*args, **kwargs): # usage same as the open_terminal func
+    def clear_history(*args, **kwargs): # usage same as the open_terminal func
         """Clear all the history of the shell."""
         global In, Out, theme, user_gbs
         if not args:
@@ -239,22 +241,6 @@ def set_commands():
                 if anwser == "Y":
                     In = []
                     Out = {}
-                    theme = "black"
-                    user_gbs = {"__name__": "__main__",
-                                "__doc__": banner,
-                                "__package__": None,
-                                "__spec__": None,
-                                "__annotations__": {},
-                                "__loader__": None,
-                                "In": In,
-                                "Out": Out,
-                                "__dict__": user_gbs,
-                                "_": None,
-                                "extend_commands": Extensions_Commands,
-                                "modules": modules}
-                    load_user_modules()
-                    user_gbs["modules"] = user_gbs["modules"]()
-                    set_commands()
                     break
                 elif anwser == "N":
                     break
@@ -263,22 +249,6 @@ def set_commands():
             if args[0] == "Y":
                 In = []
                 Out = {}
-                theme = "black"
-                user_gbs = {"__name__": "__main__",
-                            "__doc__": banner,
-                            "__package__": None,
-                            "__spec__": None,
-                            "__annotations__": {},
-                            "__loader__": None,
-                            "In": In,
-                            "Out": Out,
-                            "__dict__": user_gbs,
-                            "_": None,
-                            "extend_commands": Extensions_Commands,
-                            "modules": modules}
-                load_user_modules()
-                user_gbs["modules"] = user_gbs["modules"]()
-                set_commands()
             return repr(args[0])
 
     @Extensions_Commands
@@ -715,8 +685,23 @@ def init():
                 "_": None,
                 "extend_commands": Extensions_Commands,
                 "modules": modules}
+
     load_user_modules()
     user_gbs["modules"] = user_gbs["modules"]()
+
+    if WINDOWS:
+        class terminal_commands:
+            def __getattr__(self, name):
+                if name.upper() not in cmd_list:
+                    return
+
+                def run_command(*options, cmd=name):
+                    modified_print(os.popen(cmd + " " + " ".join(options)).read())
+
+                return run_command
+
+        user_gbs["win_term"] = terminal_commands()
+
     interact_f = False
     exec_flag = False
     exit_f = True

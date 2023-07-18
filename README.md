@@ -112,38 +112,38 @@ In [1]╭→ def a():
 In [2]╭→ a()
 ──────────────────────────────────────────────────
 Traceback (most recent call last):
-  ├  File <shell-2>:1, at module <module>:
+  ├  Shell <shell-2>:1, at module <module>:
   │
   │  → 1│ a()
   │
-  ├  File <shell-1>:6, at function a:
+  ├  Shell <shell-1>:6, at function a:
   │
   │     1│ def a():
   │     2│      def b(n):
   │     3│              def c(a, b):
   │     4│                      return a / b
   │     5│              return c(n, n)
-  │   → 6│     return b(0)
+  │  → 6│      return b(0)
   │     7│
   │     8│
   │
-  ├  File <shell-1>:5, at b:
+  ├  Shell <shell-1>:5, at b:
   │
   │     1│ def a():
   │     2│      def b(n):
   │     3│              def c(a, b):
   │     4│                      return a / b
-  │   → 5│             return c(n, n)
+  │  → 5│              return c(n, n)
   │     6│      return b(0)
   │     7│
   │     8│
   │
-  ├  File <shell-1>:4, at c:
+  ├  Shell <shell-1>:4, at c:
   │
   │     1│ def a():
   │     2│      def b(n):
   │     3│              def c(a, b):
-  │   → 4│                     return a / b
+  │  → 4│                      return a / b
   │     5│              return c(n, n)
   │     6│      return b(0)
   │     7│

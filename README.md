@@ -13,7 +13,7 @@ Welcome to My Python Shell! This is a Python shell that provides an interactive 
 - Colors the traceback for improved readability.
 - Allows changing the shell's theme to suit personal preferences.
 - Can be extended using the extend_commands decorator. Type `extend_commands.help_commands()` to see all available commands.
-- ...
+- ......
 
 ## Getting Started
 
@@ -204,7 +204,7 @@ In [3]╭→
 ```
 
 ## Extension commands
- ### commands
+ ### Commands
   - Type `Exit` or `exit` to exit.
   - Type `change_theme` to change your theme.
   - Type `clear_history` to clear all your history.
@@ -220,6 +220,7 @@ In [3]╭→
   - Type `extend_commands.help_commands()` to see all the commands.
   - Type `extend_commands.help_commands('[your command here]')` for a specific command.
   - Type `win_term.['your cmd here'](['options-1'], ['options-2'], ['options-3'], ...)` (only on Windows.)
+ *We await you to create your own commands and creates a more personal shell!*
 
 ## Want to clear your data?
  - Type `clear_data.bat` on Windows.

@@ -5,8 +5,12 @@ __email__ = ("ateng0721@hotmail.com", "9944560@schoolsnet.act.edu.au")
 __doc__ = open(".\README.md", "r", encoding="UTF-8").read()
 __version__ = "0.8"
 
+import __init__
+
+get_my_python_shell = __init__
+
 if __name__ == "__main__":
-    import __init__, argparse, sys
+    import argparse, sys
     parser = argparse.ArgumentParser(description='My Python Shell')
     parser.add_argument("-d", "--debug", help="Debugging mode", action='store_true')
     parser.add_argument("-nprtb", "--noprettytb", help="Formatted traceback", action='store_true')
@@ -19,8 +23,6 @@ if __name__ == "__main__":
     __init__.config["pretty_traceback"] = not args.noprettytb
     __init__.config["enable_ascii"] = args.ascii
     __init__.config["copy_result"] = not args.nocopyresult
-    
-    get_my_python_shell = __init__
     
     del argparse, __init__, args, parser
 

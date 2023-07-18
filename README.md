@@ -13,6 +13,7 @@ Welcome to My Python Shell! This is a Python shell that provides an interactive 
 - Colors the traceback for improved readability.
 - Allows changing the shell's theme to suit personal preferences.
 - Can be extended using the extend_commands decorator. Type `extend_commands.help_commands()` to see all available commands.
+- ...
 
 ## Getting Started
 
@@ -206,20 +207,23 @@ In [3]╭→
  ### commands
   - Type `Exit` or `exit` to exit.
   - Type `change_theme` to change your theme.
-  - Type `clear_data` to clear your user data (All your data).
+  - Type `clear_history` to clear all your history.
   - Type `get_time` to view current time.
   - Type `history` to view history. Type `history([history id])` to see the history at history id.
   - Type `load_data` to load a specific user storage file.
   - Type `open_browser` to open a webpage.
-  - Type `open_terminal` to execute a terminal command.
+  - Type `term` to execute a terminal command (only on non-Windows operating systems). 
   - Type `restart` to restart the shell (Only for debugging options `-d` or `--debug`).
   - Type `tb_history` for the whole traceback history.
- - Type `extend_commands.help_commands()` to see all the commands.
- - Type `extend_commands.help_commands('[your command here]')` for a specific command.
+  - Type `cls` to clear the screen.
+ ### Others
+  - Type `extend_commands.help_commands()` to see all the commands.
+  - Type `extend_commands.help_commands('[your command here]')` for a specific command.
+  - Type `win_term.['your cmd here'](['options-1'], ['options-2'], ['options-3'], ...)` (only on Windows.)
 
 ## Want to clear your data?
- - Type `clear_data.bat` in Windows.
- - Type `clear_data.py` in Linux
+ - Type `clear_data.bat` on Windows.
+ - Type `python3 clear_data.py` on Linux
 
 ## License
 

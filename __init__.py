@@ -691,14 +691,20 @@ def init():
 
     if WINDOWS:
         class terminal_commands:
+            __doc__ = os.popen("help").read()
+                        
             def __getattr__(self, name):
                 if name.upper() not in cmd_list:
                     return
-
-                def run_command(*options, cmd=name):
-                    modified_print(os.popen(cmd + " " + " ".join(options)).read())
-
-                return run_command
+                
+                class _c:
+                    def __call__(self, *options, cmd=name):
+                        modified_print(os.popen(cmd + " " + " ".join(options)).read())
+                    
+                    def __repr__(self, cmd=name):
+                        return os.popen(f"help {cmd}").read()
+                
+                return type(name, (), {"__call__": _c.__call__, "__repr__": _c.__repr__})()
 
         user_gbs["win_term"] = terminal_commands()
 

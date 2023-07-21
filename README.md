@@ -231,28 +231,33 @@ In [1]╭→ import math
 In [2]╭→
 
 In [3]╭→ @extend_commands
-      ├   def calc_sine(*args, **kwargs):
-      ├         if not args:
-      ├                 num = float(input("Enter a number to calculate: "))
-      ├                 print(f"sin({num}) = {math.sin(num)}")
-      ├                 return num
-      ├         print(f"sin({args[0]}) = {math.sin(args[0])}")
-      ├         return args[0]
-      ├
+       ├   def calc_sine(*args, **kwargs):
+       ├         if not args:
+       ├                 num = float(input("Enter a number to calculate: "))
+       ├                 print(f"sin({num}) = {math.sin(num)}")
+       ├                 return num
+       ├         print(f"sin({args[0]}) = {math.sin(args[0])}")
+       ├         return args[0]
+       ├
 
 In [4]╭→ calc_sine
-      ├  Enter a number to calculate: 20
-      ├  sin(20.0) = 0.9129452507276277
-      ╰  Out[4]: calc_sine(20.0)
+       ├  Enter a number to calculate: 20
+       ├  sin(20.0) = 0.9129452507276277
+       ╰  Out[4]: calc_sine(20.0)
 
 
 In [5]╭→ calc_sine(20.0)
-      ├  sin(20.0) = 0.9129452507276277
-      ╰  Out[5]: 'calc_sine(20.0)'
+       ├  sin(20.0) = 0.9129452507276277
+       ╰  Out[5]: 'calc_sine(20.0)'
 
 
 In [6]╭→
  ```
+
+ In this case, we defined a command 'calc_sine', which calculates the sine value of a number.
+ The command function have two optional prameters: `*args` and `**kwargs`.
+ if we type the command function directly, the parameters args will be `[]`, kwargs will be `{}`
+ But if we carry a parameter (which is 20) in to the function, the parameter args will be `[20]`.
  
  *We await you to create your own commands and creates a more personal shell!*
 

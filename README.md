@@ -216,10 +216,43 @@ In [3]╭→
   - Type `restart` to restart the shell (Only for debugging options `-d` or `--debug`).
   - Type `tb_history` for the whole traceback history.
   - Type `cls` to clear the screen.
+  - Type `license` to see the license of this shell. (Type `python_license` to see python's license)
  ### Others
   - Type `extend_commands.help_commands()` to see all the commands.
   - Type `extend_commands.help_commands('[your command here]')` for a specific command.
   - Type `win_term.['your cmd here'](['options-1'], ['options-2'], ['options-3'], ...)`. (only on Windows.)
+
+ ### How to register a command
+ 
+ Example:
+ ```
+In [1]╭→ import math
+
+In [2]╭→
+
+In [3]╭→ @extend_commands
+      ├   def calc_sine(*args, **kwargs):
+      ├         if not args:
+      ├                 num = float(input("Enter a number to calculate: "))
+      ├                 print(f"sin({num}) = {math.sin(num)}")
+      ├                 return num
+      ├         print(f"sin({args[0]}) = {math.sin(args[0])}")
+      ├         return args[0]
+      ├
+
+In [4]╭→ calc_sine
+      ├  Enter a number to calculate: 20
+      ├  sin(20.0) = 0.9129452507276277
+      ╰  Out[4]: calc_sine(20.0)
+
+
+In [5]╭→ calc_sine(20.0)
+      ├  sin(20.0) = 0.9129452507276277
+      ╰  Out[5]: 'calc_sine(20.0)'
+
+
+In [6]╭→
+ ```
  
  *We await you to create your own commands and creates a more personal shell!*
 

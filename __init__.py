@@ -86,10 +86,18 @@ class Extensions_Commands:
         if func:
             class _c:
                 def __repr__(self):
-                    return f"{self.f.__name__}({self.f()})"
+                    res = self.f()
+                    if res:
+                        return f"{self.f.__name__}({repr(res)})"
+                    else:
+                        return f"{self.f.__name__}()"
                 
                 def __call__(self, *args, **kwargs):
-                    return f"{self.f.__name__}({self.f(*args, **kwargs)})"
+                    res = self.f(*args, **kwargs)
+                    if res:
+                        return f"{self.f.__name__}({repr(res)})"
+                    else:
+                        return f"{self.f.__name__}()"
                 
                 def __init__(self):
                     self.f = func
@@ -150,15 +158,16 @@ def set_commands():
                     save_data()
                     _exit()
                 elif anwser == "N":
-                    return repr(anwser)
-            return ""
+                    return anwser
+            return
+
         if (args[0] == "Y") and exit_f:
             exit_f = False
             sys.stdout.write("Exiting ...\n")
             save_data()
             _exit()
         else:
-            return repr(args[0])
+            return args[0]
 
     @Extensions_Commands
     def history(*args, **kwargs): # usage same as the Exit func
@@ -184,9 +193,9 @@ def set_commands():
                         o += "..."
                     sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{idx}\t\t\t{color_code(i)}\t\t\t{o}\n")
                 sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n")
-                return ""
+                return
             sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \tYou don't have any inputs yet! \n{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n")
-            return ""
+            return
         sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  History number {args[0]}:\n")
         try:
             sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{color_code(Out[str(args[0])][0])}\t{Out[str(args[0])][1]}\n")
@@ -202,7 +211,6 @@ def set_commands():
         themes = list(colors)
         theme = themes[(themes.index(theme) + 1) % len(themes)]
         os.system("cls")
-        return ""
     
     @Extensions_Commands
     def open_browser(*args, **kwargs): # usage same as the change_theme func
@@ -224,12 +232,12 @@ def set_commands():
                 if res:
                     for i in res.split("\n"):
                         sys.stdout.write(f"       {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
-                return repr(cmd)
+                return cmd
             res = os.popen(args[0]).read()
             if res:
                 for i in res.split("\n"):
                     sys.stdout.write(f"      {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
-            return repr(args[0])
+            return args[0]
 
     @Extensions_Commands
     def clear_history(*args, **kwargs): # usage same as the open_terminal func
@@ -244,31 +252,28 @@ def set_commands():
                     break
                 elif anwser == "N":
                     break
-            return repr(anwser)
+            return anwser
         else:
             if args[0] == "Y":
                 In = []
                 Out = {}
-            return repr(args[0])
+            return args[0]
 
     @Extensions_Commands
     def load_data(*args, **kwargs): # usage same as the clear_data func
         """Load a history file."""
-        if repr(clear_data) == "clear_data('Y')":
+        if repr(clear_history) == "clear_data('Y')":
             load_user_data(modified_input(f"Please enter your storage file's path: "))
-        return ""
 
     @Extensions_Commands
     def get_time(*args, **kwargs): # usage same as the load_data func
         """Get the current time."""
         sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Current time: {datetime.datetime.now()}\n")
-        return ""
 
     @Extensions_Commands
     def cls(*args, **kwargs): # usage same as the get_time func
         """Clear the screen."""
         os.system("cls")
-        return ""
 
     if config["debug_f"]:
         @Extensions_Commands
@@ -299,7 +304,15 @@ def set_commands():
             for line in tb_list[tb].split("\n"):
                 sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL}  \t{line}\n")
             sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL}  \n")
-        return ""
+
+    user_gbs["python_license"] = builtins.license
+
+    @Extensions_Commands
+    def license(*args, **kwargs):
+        sys.stdout.write(f"\n{LIGHT_HORIZONTAL * 80}\n")
+        if os.system("more LICENSE"):
+            sys.stderr.write("\nError reading `LICENSE` file, please check your file have downloaded correctly.")
+        sys.stdout.write(f"\n{LIGHT_HORIZONTAL * 80}\n")
 
     
 def load_user_data(storage_file=user_storage_file):

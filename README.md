@@ -38,22 +38,22 @@ pip install -r requirements.txt
 **Window**
 
 ```
-my_python_shell.bat [-h] [-d] [-nprtb] [-a] [-ncres]
+my_python_shell.bat [-h] [-d] [--noprettytb] [-a] [--nocopyresult] [--nocolor]
 ```
 
 **Linux**
 ```
-python . [-h] [-d] [-nprtb] [-a] [-ncres]
+python . [-h] [-d] [--noprettytb] [-a] [--nocopyresult] [--nocolor]
 ```
 
 Usage of the options:
 ```
-  -h, --help            show this help message and exit
-  -d, --debug           Debugging mode
-  -nprtb, --noprettytb  Formatted traceback
-  -a, --ascii           Enable ascii charactars
-  -ncres, --nocopyresult
-                        Don't copy the result of a expression after evaluating it
+  -h, --help      show this help message and exit
+  -d, --debug     Debugging mode
+  --noprettytb    Formatted traceback
+  -a, --ascii     Enable ascii charactars
+  --nocopyresult  Don't copy the result of a expression after evaluating it
+  --nocolor       No color display
 ```
 #### After starting the shell
 1. You should now see the My Python Shell welcome message and the interactive prompt.

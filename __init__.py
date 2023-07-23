@@ -40,6 +40,7 @@ _print = builtins.print
 exit_f = None
 err_pattern = r""
 interact_f = None
+indent = 0
 colors = {"black": [None, None, None, None, None, None, None, None, None, None]}
 theme = "black"
 banner = ""
@@ -120,9 +121,9 @@ class Extensions_Commands:
             cmds = ""
             for i in dir(self):
                 if hasattr(getattr(self, i), "f"):
-                    cmds += f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  {i}\n"
+                    cmds += f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  {i}\n"
             sys.stdout.write(cmds)
-            sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_UP_AND_RIGHT}  Please type `extend_commands.help_commands('[your command here]')` for a specific command.\n")
+            sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_UP_AND_RIGHT}  Please type `extend_commands.help_commands('[your command here]')` for a specific command.\n")
         else:
             for i in dir(self):
                 attr = getattr(self, i)
@@ -131,14 +132,14 @@ class Extensions_Commands:
                         doc = attr.__doc__
                         _doc = ""
                         for i in doc.split("\n"):
-                            _doc += f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}\t  {i}\n"
+                            _doc += f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}\t  {i}\n"
                         if _doc:
-                            sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Help for command `{cmd}`: \n")
+                            sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Help for command `{cmd}`: \n")
                             sys.stdout.write(f"{_doc}")
                         else:
-                            sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  No documentation for command `{cmd}`\n")
+                            sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  No documentation for command `{cmd}`\n")
                         return True
-            sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Couldn't find command `{cmd}`\n")
+            sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Couldn't find command `{cmd}`\n")
             return False
     
         
@@ -179,9 +180,9 @@ def set_commands():
         """
         global Out, In
         if not args:
-            sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  History:\n")
+            sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  History:\n")
             if Out:
-                sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \tinput_index\t\tinputs\t\t\toutputs\n")
+                sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \tinput_index\t\tinputs\t\t\toutputs\n")
                 for idx, io in Out.items():
                     i, o = io
                     if len(i) > 10:
@@ -191,16 +192,16 @@ def set_commands():
                     if len(o) > 20:
                         o = o[:20]
                         o += "..."
-                    sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{idx}\t\t\t{color_code(i)}\t\t\t{o}\n")
-                sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n")
+                    sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{idx}\t\t\t{color_code(i)}\t\t\t{o}\n")
+                sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n")
                 return
-            sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \tYou don't have any inputs yet! \n{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n")
+            sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \tYou don't have any inputs yet! \n{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n")
             return
-        sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  History number {args[0]}:\n")
+        sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  History number {args[0]}:\n")
         try:
-            sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{color_code(Out[str(args[0])][0])}\t{Out[str(args[0])][1]}\n")
+            sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{color_code(Out[str(args[0])][0])}\t{Out[str(args[0])][1]}\n")
         except KeyError:
-            sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \tHistory doesn't exists.\n")
+            sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \tHistory doesn't exists.\n")
         else:
             return args[0]
 
@@ -268,7 +269,7 @@ def set_commands():
     @Extensions_Commands
     def get_time(*args, **kwargs): # usage same as the load_data func
         """Get the current time."""
-        sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Current time: {datetime.datetime.now()}\n")
+        sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Current time: {datetime.datetime.now()}\n")
 
     @Extensions_Commands
     def cls(*args, **kwargs): # usage same as the get_time func
@@ -291,19 +292,19 @@ def set_commands():
     def tb_history(*args, **kwargs): # usage same as the restart func
         """Get the shell's traceback history."""
         global tb_list
-        sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL}  \n")
+        sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL}  \n")
         if args:
             if args[0] < len(tb_list):
                 for line in tb_list[args[0] - 1].split("\n"):
-                    sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL}  {line}\n")
+                    sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL}  {line}\n")
             else:
-                sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  The requested error index doesn't exists.\n")
+                sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  The requested error index doesn't exists.\n")
             return args[0]
         for tb in range(len(tb_list)):
-            sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  error {tb + 1}: \n")
+            sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  error {tb + 1}: \n")
             for line in tb_list[tb].split("\n"):
-                sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL}  \t{line}\n")
-            sys.stdout.write(f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL}  \n")
+                sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL}  \t{line}\n")
+            sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL}  \n")
 
     user_gbs["python_license"] = builtins.license
 
@@ -372,22 +373,22 @@ def modified_input(text=""):
     global prompt, _input, _print
     text_list = str(text).split("\n")
     if len(text_list) <= 1:
-        return _input(f"{' ' * (len(prompt) - 15)}{LIGHT_VERTICAL_AND_RIGHT}  {text}")
+        return _input(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {text}")
     else:
         for i in text_list[:-1]:
-            _print(f"{' ' * (len(prompt) - 15)}{LIGHT_VERTICAL_AND_RIGHT}  {i}")
-        return _input(f"{' ' * (len(prompt) - 15)}{LIGHT_VERTICAL_AND_RIGHT}  {text_list[-1]}")
+            _print(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {i}")
+        return _input(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {text_list[-1]}")
 
 
 def modified_print(text="", *args, **kwargs):
     global prompt, _print
     text_list = str(text).split("\n")
     if len(text_list) <= 1:
-        _print(f"{' ' * (len(prompt) - 15)}{LIGHT_VERTICAL_AND_RIGHT}  {text}", *args, **kwargs)
+        _print(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {text}", *args, **kwargs)
     else:
         for i in text_list[:-1]:
-            _print(f"{' ' * (len(prompt) - 15)}{LIGHT_VERTICAL_AND_RIGHT}  {i}")
-        _print(f"{' ' * (len(prompt) - 15)}{LIGHT_ARC_UP_AND_RIGHT}  {text_list[-1]}")
+            _print(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {i}")
+        _print(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  {text_list[-1]}")
 
 
 def match_filename(name):
@@ -422,9 +423,9 @@ def modified_displayhook(obj):
             Out[len(In)] = (In[-1], repr_obj)
             user_gbs["_"] = obj
             if "\n" in repr_obj:
-                sys.stdout.write(f"{' ' * (len(prompt) - 15)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": \n\n{repr_obj}\n")
+                sys.stdout.write(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": \n\n{repr_obj}\n")
             else:
-                sys.stdout.write(f"{' ' * (len(prompt) - 15)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": {repr_obj}\n")
+                sys.stdout.write(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": {repr_obj}\n")
             sys.stdout.write(f"\x1b]0;My python shell - {repr_obj}\x07\r\n")
             if config["copy_result"]:
                 pyperclip.copy(repr_obj)
@@ -567,7 +568,7 @@ def input_code(pmt=None):
             while True:
                 if not exec_flag:
                     try:
-                        sys.ps2 = f"{' ' * (len(prompt) - 15)}{LIGHT_VERTICAL_AND_RIGHT}   "
+                        sys.ps2 = f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}   "
                         line = _input(sys.ps2)
                     except EOFError:
                         raise IndentationError("expected an indented block")
@@ -595,7 +596,10 @@ def color_code(code_string):
     """
     colors the code.
     """
-    return pygments.highlight(code_string, pygments.lexers.PythonLexer(), pygments.formatters.TerminalFormatter(bg="dark")).split("\n")[0]
+    if not config["nocolor"]:
+        return pygments.highlight(code_string, pygments.lexers.PythonLexer(), pygments.formatters.TerminalFormatter(bg="dark")).split("\n")[0]
+    else:
+        return code_string
 
 
 def modified_write(string, color=colors[theme][8], on_color=theme, **kwargs):
@@ -629,6 +633,7 @@ def init():
            logger, \
            logo, \
            config, \
+           indent, \
            \
            LIGHT_VERTICAL_AND_RIGHT, \
            LIGHT_UP_AND_RIGHT, \
@@ -725,9 +730,12 @@ def init():
     exec_flag = False
     exit_f = True
     frame_name = f"<shell-{len(In)}>"
-    colors = {"black": ["light_red", "light_yellow", "light_magenta", "light_green", "magenta", "yellow", "light_cyan", "red", "white", "blue"],
+    if not config["nocolor"]:
+        indent = 15
+        colors = {"black": ["light_red", "light_yellow", "light_magenta", "light_green", "magenta", "yellow", "light_cyan", "red", "white", "blue"],
               "white": ["light_green", "light_blue", "light_green", "light_magenta", "green", "blue", "red", "green", "black", "yellow"]}
-
+    else:
+        indent = 10
     sys.stdout.write = modified_write
     
     logger.info("Setting theme successful")
@@ -754,7 +762,7 @@ def init():
     
     prompt = termcolor.colored(f"\nIn [0]", *get_color(3))
     sys.ps1 = f"{prompt}{LIGHT_ARC_DOWN_AND_RIGHT}{RIGHTWARDS_ARROW} "
-    sys.ps2 = f"{(len(prompt) - 15) * ' '}{LIGHT_VERTICAL_AND_RIGHT}   "
+    sys.ps2 = f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}   "
     logger.info("Setting prompt successful")
     
     logo = r"""

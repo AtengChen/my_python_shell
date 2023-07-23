@@ -43,7 +43,7 @@ my_python_shell.bat [-h] [-d] [--noprettytb] [-a] [--nocopyresult] [--nocolor]
 
 **Linux**
 ```
-python . [-h] [-d] [--noprettytb] [-a] [--nocopyresult] [--nocolor]
+python3 . [-h] [-d] [--noprettytb] [-a] [--nocopyresult] [--nocolor]
 ```
 
 Usage of the options:

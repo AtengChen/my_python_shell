@@ -13,9 +13,11 @@ if __name__ == "__main__":
     import argparse, sys
     parser = argparse.ArgumentParser(description='My Python Shell')
     parser.add_argument("-d", "--debug", help="Debugging mode", action='store_true')
-    parser.add_argument("-nprtb", "--noprettytb", help="Formatted traceback", action='store_true')
+    parser.add_argument("--noprettytb", help="Formatted traceback", action='store_true')
     parser.add_argument("-a", "--ascii", help="Enable ascii charactars", action='store_true')
-    parser.add_argument("-ncres", "--nocopyresult", help="Don't copy the result of a expression after evaluating it", action='store_true')
+    parser.add_argument("--nocopyresult", help="Don't copy the result of a expression after evaluating it", action='store_true')
+    parser.add_argument("--nocolor", help="No color display", action='store_true')
+    
 
     args = parser.parse_args()
 
@@ -23,6 +25,7 @@ if __name__ == "__main__":
     __init__.config["pretty_traceback"] = not args.noprettytb
     __init__.config["enable_ascii"] = args.ascii
     __init__.config["copy_result"] = not args.nocopyresult
+    __init__.config["nocolor"] = args.nocolor
     
     del argparse, __init__, args, parser
 

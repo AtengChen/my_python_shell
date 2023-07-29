@@ -45,7 +45,7 @@ colors = {"black": [None, None, None, None, None, None, None, None, None, None]}
 theme = "black"
 banner = ""
 logo = ""
-user_data = [None, None, None, None]
+user_data = [None, None, None, None, None]
 tb_list = []
 config = collections.defaultdict(types.NoneType)
 

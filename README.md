@@ -77,8 +77,35 @@ In [2]╭→ print(msg) # hello world!
 
 In [3]╭→
 ```
+2. Invalid "C-tax"
+```
+In [1]╭→ #include <stdio.h>
 
-2. Addition of two numbers
+In [2]╭→ int main()
+      ├   {
+      ├      printf("Hello, World!");
+      ├      return 0;
+      ├   }
+      ├
+──────────────────────────────────────────────────
+Traceback (most recent call last):
+  ├  Shell <shell-2>:1, at module <module>:
+  │
+  │  → 1│ int main()
+  │    2│ {
+  │    3│    printf("Hello, World!");
+  │    4│    return 0;
+  │    5│ }
+  │    6│
+  │    7│
+  │
+  └  SyntaxError: Invalid Syntax
+──────────────────────────────────────────────────
+
+In [3]╭→
+```
+
+3. Addition of two numbers
 ```
 In [1]╭→ a = 5
 
@@ -92,14 +119,14 @@ In [4]╭→ print(result) # 15
 In [5]╭→
 ```
 
-3. Square root of 2
+4. Square root of 2
 ```
 In [1]╭→ print(modules.math.sqrt(10)) # 3.1622776601683795
       ╰  3.1622776601683795
 
 In [2]╭→
 ```
-4. ZeroDivisionError
+5. ZeroDivisionError
 ```
 In [1]╭→ def a():
       ├         def b(n):
@@ -154,7 +181,7 @@ Traceback (most recent call last):
 
 In [3]╭→
 ```
-5. Hello, number!
+6. Hello, number!
 ```
 In [1]╭→ s = ""
 
@@ -192,7 +219,7 @@ In [4]╭→ print(s)
 
 In [5]╭→
 ```
-6. What's your name?
+7. What's your name?
 ```
 In [1]╭→ name = input("What's your name? ")
       ├  What's your name? Aten Chen

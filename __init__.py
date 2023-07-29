@@ -74,7 +74,12 @@ file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
 class modules:
-    pass
+    def __call__(self):
+        modules = []
+        for i in dir(self):
+            if not i.startswith("__"):
+                modules.append(i)
+        return modules
 
 class Extensions_Commands:
     """
@@ -305,8 +310,10 @@ def set_commands():
             for line in tb_list[tb].split("\n"):
                 sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL}  \t{line}\n")
             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL}  \n")
-
-    user_gbs["python_license"] = builtins.license
+    
+    try:
+        user_gbs["python_license"] = builtins.license
+    except: user_gbs["python_license"] = None
 
     @Extensions_Commands
     def license(*args, **kwargs):
@@ -419,7 +426,24 @@ def modified_displayhook(obj):
     global Out, In, user_gbs, config
     try:
         if obj is not None:
-            repr_obj = pprint.pformat(obj, indent=4) if hasattr(obj, "__iter__") else repr(obj)
+            copy_cache = False
+
+            if (obj == user_gbs["_"]) and (type(obj).__module__ == "builtins"):
+                try:
+                    eval(repr(obj))
+                except SyntaxError:
+                    pass
+                else:
+                    try:
+                        repr_obj = Out[str(len(Out))][1]
+                        copy_cache = True
+                    except KeyError:
+                        copy_cache = False
+
+            if not copy_cache:
+                repr_obj = pprint.pformat(obj, indent=4) if hasattr(obj, "__iter__") else repr(obj)
+
+
             Out[len(In)] = (In[-1], repr_obj)
             user_gbs["_"] = obj
             if "\n" in repr_obj:
@@ -444,9 +468,19 @@ def modified_traceback(exc):
     result = ""
     tb_main = ""
     err_count = 0
+    is_syntaxerror = isinstance(exc, SyntaxError)
+
     for tb in traceback_list:
         filename, line_num, func_name, error_code = tb
-        if (filename in __file__) and (not config["debug_f"]):
+        err_count += 1
+        if is_syntaxerror and (err_count == len(traceback_list)):
+            filename = f"<shell-{len(In)}>"
+            line_num = exc.lineno
+            func_name = "<module>"
+            error_code = In[-1]
+
+        hide_detail = (filename in __file__) and (not config["debug_f"])
+        if hide_detail:
             continue
         err_func_type = ""
         if func_name == "<module>":
@@ -473,42 +507,43 @@ def modified_traceback(exc):
                     display_filename = f"File {termcolor.colored(filename, *get_color(4))}"
                 else:
                     display_filename = f"Shell {termcolor.colored(filename, *get_color(4))}"
-        if isinstance(exc, RecursionError):
-            err_count += 1
-        if err_count > 4:
+        if (err_count > 4) and isinstance(exc, RecursionError):
             tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  ...\n"
             break
-        if error_code:
-            tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  {display_filename}" \
-                      f":{termcolor.colored(line_num, *get_color(5))}, " \
-                      f"at {termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
-                      f"  {LIGHT_VERTICAL}\n  {LIGHT_VERTICAL}  {termcolor.colored(RIGHTWARDS_ARROW + ' ' + str(line_num), *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n  {LIGHT_VERTICAL}\n"
-        else:
-            try:
-                error_input = In[int(match_filename(filename)) - 1].split("\n")
-                error_code = error_input[line_num - 1]
-                display_code = ""
-                
-                for line_index in range(len(error_input)):
-                    if not (line_index == line_num - 1):
-                        display_line_number = str(line_index + 1)
-                        display_line_number = display_line_number.rjust(len(str(len(error_input) + 1)) - len(display_line_number) + 1)
-                        display_code += f"  {LIGHT_VERTICAL}\t{termcolor.colored(display_line_number, *get_color(3))}{LIGHT_VERTICAL} {color_code(error_input[line_index])}\n"
+        
+        display_code = ""
+        try:
+            error_input = In[int(match_filename(filename)) - 1].split("\n")
+            error_code = error_input[line_num - 1]
+            for line_index in range(len(error_input)):
+                if not (line_index == line_num - 1):
+                    display_line_number = str(line_index + 1)
+                    display_line_number = display_line_number.rjust(len(str(len(error_input) + 1)) - len(display_line_number) + 1)
+                    display_code += f"  {LIGHT_VERTICAL}\t{termcolor.colored(display_line_number, *get_color(3))}{LIGHT_VERTICAL} {color_code(error_input[line_index])}\n"
+                else:
+                    display_line_number = RIGHTWARDS_ARROW + ' ' + str(line_num)
+                    display_line_number = display_line_number.rjust(len(str(len(error_input) + 1)) - len(display_line_number) + 5)
+                    if is_syntaxerror and (err_count == len(traceback_list)):
+                        c = error_code.replace(error_code.strip(), color_code(error_code, exc.offset))
+                        display_code += f"  {LIGHT_VERTICAL}  {termcolor.colored(display_line_number, *get_color(1))}{LIGHT_VERTICAL} {c}\n"
                     else:
-                        display_line_number = RIGHTWARDS_ARROW + ' ' + str(line_num)
-                        display_line_number = display_line_number.rjust(len(str(len(error_input) + 1)) - len(display_line_number) + 5)
                         display_code += f"  {LIGHT_VERTICAL}  {termcolor.colored(display_line_number, *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n"
-                tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  {display_filename}" \
-                           f":{termcolor.colored(line_num, *get_color(5))}, " \
-                           f"at {termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
-                           f"  {LIGHT_VERTICAL}\n{display_code}  {LIGHT_VERTICAL}\n"
-            except (IndexError, AttributeError) as e:
-                tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  {display_filename}" \
-                           f":{termcolor.colored(line_num, *get_color(5))}, " \
-                           f"at {termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}:\n"
-
+        except (IndexError, AttributeError):
+            if hide_detail:
+                display_code += f"  {LIGHT_VERTICAL}  {termcolor.colored('0', *get_color(1))}{LIGHT_VERTICAL} {termcolor.colored('(Cannot find original code)', *get_color(7))}\n"
+            else:
+                display_line_number = RIGHTWARDS_ARROW + ' ' + str(line_num)
+                display_code += f"  {LIGHT_VERTICAL}  {termcolor.colored(display_line_number, *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n"
+        
+        tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  {display_filename}" \
+                       f":{termcolor.colored(line_num, *get_color(5))}, " \
+                       f"at {termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
+                       f"  {LIGHT_VERTICAL}\n{display_code}  {LIGHT_VERTICAL}\n"
     if tb_main:
-        result += f"{line}\nTraceback (most recent call last):\n{tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(type(exc).__name__, *get_color(7))}: {exc}\n"
+        if is_syntaxerror:
+            result += f"{line}\nTraceback (most recent call last):\n{tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(type(exc).__name__, *get_color(7))}: Invalid Syntax\n"
+        else:
+            result += f"{line}\nTraceback (most recent call last):\n{tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(type(exc).__name__, *get_color(7))}: {exc}\n"
         result += line + "\n"
     else:
         err_cause = f": {exc}" if str(exc) else ""
@@ -592,14 +627,20 @@ def input_code(pmt=None):
     return inp_code
 
 
-def color_code(code_string):
+def color_code(code_string, offset=None):
     """
     colors the code.
     """
     if not config["nocolor"]:
-        return pygments.highlight(code_string, pygments.lexers.PythonLexer(), pygments.formatters.TerminalFormatter(bg="dark")).split("\n")[0]
-    else:
-        return code_string
+        if offset:
+            code_string = code_string.strip()
+            left = code_string[:offset - 1]
+            char = code_string[offset - 1]
+            right = code_string[offset:]
+            result = f"{left}{termcolor.colored(char, 'white', 'on_yellow')}{right}"
+        else:
+            result = pygments.highlight(code_string, pygments.lexers.PythonLexer(), pygments.formatters.TerminalFormatter(bg="dark")).split("\n")[0]
+    return result
 
 
 def modified_write(string, color=colors[theme][8], on_color=theme, **kwargs):

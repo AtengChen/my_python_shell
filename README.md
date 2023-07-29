@@ -286,8 +286,9 @@ In [6]╭→
  if we type the command function directly, the parameters args will be `[]`, kwargs will be `{}`
  But if we carry a parameter (which is 20) in to the function, the parameter args will be `[20]`.
 
- ## IMPORTANT ##
+ ### IMPORTANT ###
  All the extension functions must define two optional parameters: `*args` and `**kwargs`. The function must return `None` or return the input of users.
+
  
  *We await you to create your own commands and creates a more personal shell!*
 

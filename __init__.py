@@ -286,7 +286,7 @@ def set_commands():
         def restart(*args, **kwargs): # usage same as the cls func
             """Restart the shell. It will clear all the data."""
             global user_gbs, user_data, exit_f
-            if repr(user_gbs["clear_data"]) == "clear_data('N')":
+            if repr(user_gbs["clear_history"]) == "history('N')":
                 return ""
             save_data()
             if not os.system(".\__main__.py"):
@@ -313,7 +313,8 @@ def set_commands():
     
     try:
         user_gbs["python_license"] = builtins.license
-    except: user_gbs["python_license"] = None
+    except: 
+        user_gbs["python_license"] = None
 
     @Extensions_Commands
     def license(*args, **kwargs):
@@ -324,23 +325,25 @@ def set_commands():
 
     
 def load_user_data(storage_file=user_storage_file):
-    global In, Out, theme, user_data, logger, user_storage_file, user_gbs
+    global In, Out, theme, user_data, logger, user_storage_file, user_gbs, tb_list
     logger.info(f"Loading user storage `{storage_file}`")
     try:
         user_storage = open(storage_file, "r")
         user_data = json.loads(user_storage.read())
-        In, Out, theme = user_data
+        In, Out, theme, tb_list = user_data
         user_storage.close()
         logger.info("Loading user storage successful")
     except FileNotFoundError:
         In = []
         Out = {}
         theme = "black"
+        tb_list = []
         logger.warning("Couldn't find user storage file")
     except Exception as e:
         In = []
         Out = {}
         theme = "black"
+        tb_list = []
         logger.error(f'Error opening {storage_file}: {e}')
         sys.stderr.write(f"Error ocurred when opening {storage_file}:\n")
         result = modified_traceback(e)
@@ -362,8 +365,8 @@ def load_user_modules():
 
 
 def save_data():
-    global user_data, In, Out, theme, user_storage_file
-    user_data = (In, Out, theme)
+    global user_data, In, Out, theme, user_storage_file, tb_list
+    user_data = (In, Out, theme, tb_list)
     with open(user_storage_file, "w") as f:
         json.dump(user_data, f)
 
@@ -861,6 +864,7 @@ def main():
     except KeyboardInterrupt as e:
         sys.stderr.write(termcolor.colored(f"\nKeyboardInterrupt\n", *get_color(7)))
         main()
+    
     return 0
 
 

@@ -643,6 +643,8 @@ def color_code(code_string, offset=None):
             result = f"{left}{termcolor.colored(char, 'white', 'on_yellow')}{right}"
         else:
             result = pygments.highlight(code_string, pygments.lexers.PythonLexer(), pygments.formatters.TerminalFormatter(bg="dark")).split("\n")[0]
+    result = result.replace("\t", f"\b{termcolor.colored(LIGHT_VERTICAL, attrs=['dark'])}\t")
+
     return result
 
 
@@ -864,7 +866,6 @@ def main():
     except KeyboardInterrupt as e:
         sys.stderr.write(termcolor.colored(f"\nKeyboardInterrupt\n", *get_color(7)))
         main()
-    
     return 0
 
 

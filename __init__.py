@@ -23,6 +23,7 @@ import unicodedata          # print unicode charactars
 import webbrowser           # only for an extension command
 
 from cmd_utils import cmd_list, WINDOWS
+from inspect_utils import get_info as _get_info
 
 # set the default vars
 
@@ -390,15 +391,16 @@ def modified_input(text=""):
         return _input(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {text_list[-1]}")
 
 
-def modified_print(text="", *args, **kwargs):
+def modified_print(text="", dent=0, *args, **kwargs):
     global prompt, _print
     text_list = str(text).split("\n")
+    tab = '\t'
     if len(text_list) <= 1:
-        _print(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {text}", *args, **kwargs)
+        _print(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {tab * dent}{text}", *args, **kwargs)
     else:
         for i in text_list[:-1]:
-            _print(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {i}")
-        _print(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  {text_list[-1]}")
+            _print(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {tab * dent}{i}")
+        _print(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  {tab * dent}{text_list[-1]}")
 
 
 def match_filename(name):
@@ -653,6 +655,22 @@ def modified_write(string, color=colors[theme][8], on_color=theme, **kwargs):
     _write(termcolor.colored(string, color, "on_" + on_color), **kwargs)
 
 
+def get_info(obj):
+    info_data = _get_info(obj)
+    for k, v in info_data.items():
+        if k == "attributes":
+            sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  attributes: \n")
+            for i in v:
+                sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{i}\n")
+        elif (k == "name") or (k == "type"):
+            sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  {k}:\t\t{color_code(v)}\n")
+        elif k == "document":
+            sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  document: \n")
+            modified_print(v, dent=1)
+        else:
+            sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  {k}:\t\t{v}\n")
+
+            
 def init():
     """
     Initalize the whole shell:
@@ -748,7 +766,8 @@ def init():
                 "__dict__": user_gbs,
                 "_": None,
                 "extend_commands": Extensions_Commands,
-                "modules": modules}
+                "modules": modules,
+                "get_info": get_info}
 
     load_user_modules()
     user_gbs["modules"] = user_gbs["modules"]()

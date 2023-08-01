@@ -396,7 +396,7 @@ def modified_print(text="", dent=0, *args, **kwargs):
     text_list = str(text).split("\n")
     tab = '\t'
     if len(text_list) <= 1:
-        _print(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {tab * dent}{text}", *args, **kwargs)
+        _print(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  {tab * dent}{text}", *args, **kwargs)
     else:
         for i in text_list[:-1]:
             _print(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {tab * dent}{i}")
@@ -651,8 +651,9 @@ def color_code(code_string, offset=None):
 
 
 def modified_write(string, color=colors[theme][8], on_color=theme, **kwargs):
-    global _write
-    _write(termcolor.colored(string, color, "on_" + on_color), **kwargs)
+    global _write, exit_f
+    if exit_f:
+        _write(termcolor.colored(string, color, "on_" + on_color), **kwargs)
 
 
 def get_info(obj):
@@ -671,7 +672,7 @@ def get_info(obj):
             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  {k}:\t\t{v}\n")
 
             
-def init():
+def init(write_banner=True):
     """
     Initalize the whole shell:
         Set up the environment vars
@@ -813,18 +814,30 @@ def init():
 
     builtins.exit = user_gbs["Exit"]
     builtins.quit = user_gbs["Exit"]
-
-    def on_exit():
-        return repr(user_gbs["Exit"])
-
     builtins.input = modified_input
     builtins.print = modified_print
 
+    def on_exit():
+        return repr(user_gbs["Exit"])
+    
+    def on_error(*args):
+        global exit_f
+        os.system("PAUSE")
+        sys.stdout = sys.__stdout__
+        sys.stdin = sys.__stdin__
+        sys.stderr = sys.__stderr__
+        sys.displayhook = sys.__displayhook__
+        sys.excepthook = sys.__excepthook__
+        sys.stderr.write(modified_traceback(args[1]))
+        init(write_banner=False)
+        main()
+    
     atexit.register(on_exit)
     logger.info("Registering exit-func successful")
 
     sys.displayhook = modified_displayhook
-    
+    sys.excepthook = on_error
+
     prompt = termcolor.colored(f"\nIn [0]", *get_color(3))
     sys.ps1 = f"{prompt}{LIGHT_ARC_DOWN_AND_RIGHT}{RIGHTWARDS_ARROW} "
     sys.ps2 = f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}   "
@@ -856,7 +869,8 @@ def init():
 
     logger.info("Initializing shell successful.")
     
-    sys.stdout.write(banner)
+    if write_banner:
+        sys.stdout.write(banner)
 
 
 def main():
@@ -881,7 +895,6 @@ def main():
                 tb_list.append(result)
             else:
                 user_gbs["__dict__"] = user_gbs
-                sys.stdout.write("")
     except KeyboardInterrupt as e:
         sys.stderr.write(termcolor.colored(f"\nKeyboardInterrupt\n", *get_color(7)))
         main()
@@ -897,3 +910,4 @@ else:
     
     if os.system(".\__main__.py"):
         raise Exception("`__main__.py` not found")
+        os.system("PAUSE")

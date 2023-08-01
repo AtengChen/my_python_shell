@@ -68,25 +68,25 @@ Usage of the options:
 
 Here are a few examples to help you get started:
 
-1. Print hello world!
+1. **Print hello world!**
 ![Hello world](/examples/1.png "Hello world!")
 -----
-2. Invalid "C-tax"
+2. **Invalid "C-tax"**
 ![Invalid C-tax](/examples/2.png "Invalid C-tax")
 -----
-3. Addition of two numbers
+3. **Addition of two numbers**
 ![Addition of two numbers](/examples/3.png "Addition of two numbers")
 -----
-4. Square root of 2
+4. **Square root of 2**
 ![Square root of 2](/examples/4.png "Square root of 2")
 -----
-5. ZeroDivisionError
+5. **ZeroDivisionError**
 ![ZeroDivisionError](/examples/5.png "ZeroDivisionError")
 -----
-6. Hello, number!
+6. **Hello, number!**
 ![Hello, number](/examples/6.png "Hello, number!")
 -----
-7. What's your name?
+7. **What's your name?**
 ![What's your name?](/examples/7.png "What's your name?")
 
 ## Extension commands

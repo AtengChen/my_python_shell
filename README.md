@@ -69,166 +69,25 @@ Usage of the options:
 Here are a few examples to help you get started:
 
 1. Print hello world!
-```
-In [1]╭→ msg = "hello world!"
-
-In [2]╭→ print(msg) # hello world!
-      ╰  hello world!
-
-In [3]╭→
-```
+![Hello world](/examples/1.png "Hello world!")
+-----
 2. Invalid "C-tax"
-```
-In [1]╭→ #include <stdio.h>
-
-In [2]╭→ int main()
-      ├   {
-      ├      printf("Hello, World!");
-      ├      return 0;
-      ├   }
-      ├
-──────────────────────────────────────────────────
-Traceback (most recent call last):
-  ├  Shell <shell-2>:1, at module <module>:
-  │
-  │  → 1│ int main()
-  │    2│ {
-  │    3│ │     printf("Hello World!");
-  │    4│ │     return 0;
-  │    5│ }
-  │    6│
-  │    7│
-  │
-  └  SyntaxError: Invalid Syntax
-──────────────────────────────────────────────────
-
-In [3]╭→
-```
-
+![Invalid C-tax](/examples/2.png "Invalid C-tax")
+-----
 3. Addition of two numbers
-```
-In [1]╭→ a = 5
-
-In [2]╭→ b = 10
-
-In [3]╭→ result = a + b
-
-In [4]╭→ print(result) # 15
-      ╰  15
-
-In [5]╭→
-```
-
+![Addition of two numbers](/examples/3.png "Addition of two numbers")
+-----
 4. Square root of 2
-```
-In [1]╭→ print(modules.math.sqrt(10)) # 3.1622776601683795
-      ╰  3.1622776601683795
-
-In [2]╭→
-```
+![Square root of 2](/examples/4.png "Square root of 2")
+-----
 5. ZeroDivisionError
-```
-In [1]╭→ def a():
-      ├         def b(n):
-      ├                 def c(a, b):
-      ├                         return a / b
-      ├                 return c(n, n)
-      ├         return b(0)
-      ├
-
-In [2]╭→ a()
-──────────────────────────────────────────────────
-Traceback (most recent call last):
-  ├  Shell <shell-2>:1, at module <module>:
-  │
-  │  → 1│ a()
-  │
-  ├  Shell <shell-1>:6, at function a:
-  │
-  │     1│ def a():
-  │     2│      def b(n):
-  │     3│              def c(a, b):
-  │     4│                      return a / b
-  │     5│              return c(n, n)
-  │   → 6│      return b(0)
-  │     7│
-  │     8│
-  │
-  ├  Shell <shell-1>:5, at b:
-  │
-  │     1│ def a():
-  │     2│      def b(n):
-  │     3│              def c(a, b):
-  │     4│                      return a / b
-  │   → 5│              return c(n, n)
-  │     6│      return b(0)
-  │     7│
-  │     8│
-  │
-  ├  Shell <shell-1>:4, at c:
-  │
-  │     1│ def a():
-  │     2│      def b(n):
-  │     3│              def c(a, b):
-  │   → 4│                      return a / b
-  │     5│              return c(n, n)
-  │     6│      return b(0)
-  │     7│
-  │     8│
-  │
-  └  ZeroDivisionError: division by zero
-──────────────────────────────────────────────────
-
-In [3]╭→
-```
+![ZeroDivisionError](/examples/5.png "ZeroDivisionError")
+-----
 6. Hello, number!
-```
-In [1]╭→ s = ""
-
-In [2]╭→ for i in range(10):
-      ├         s += f"Hello, {i}!\n"
-      ├
-
-In [3]╭→ s
-      ╰  Out[3]:
-
-('Hello, 0!\n'
- 'Hello, 1!\n'
- 'Hello, 2!\n'
- 'Hello, 3!\n'
- 'Hello, 4!\n'
- 'Hello, 5!\n'
- 'Hello, 6!\n'
- 'Hello, 7!\n'
- 'Hello, 8!\n'
- 'Hello, 9!\n')
-
-
-In [4]╭→ print(s)
-      ├  Hello, 0!
-      ├  Hello, 1!
-      ├  Hello, 2!
-      ├  Hello, 3!
-      ├  Hello, 4!
-      ├  Hello, 5!
-      ├  Hello, 6!
-      ├  Hello, 7!
-      ├  Hello, 8!
-      ├  Hello, 9!
-      ├
-
-In [5]╭→
-```
+![Hello, number](/examples/6.png "Hello, number!")
+-----
 7. What's your name?
-```
-In [1]╭→ name = input("What's your name? ")
-      ├  What's your name? Aten Chen
-
-In [2]╭→ print(name)
-      ├  Aten Chen
-
-In [3]╭→
-```
+![What's your name?](/examples/7.png "What's your name?")
 
 ## Extension commands
  ### Commands

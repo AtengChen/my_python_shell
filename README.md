@@ -93,8 +93,8 @@ Traceback (most recent call last):
   │
   │  → 1│ int main()
   │    2│ {
-  │    3│    printf("Hello, World!");
-  │    4│    return 0;
+  │    3│ │     printf("Hello World!");
+  │    4│ │     return 0;
   │    5│ }
   │    6│
   │    7│

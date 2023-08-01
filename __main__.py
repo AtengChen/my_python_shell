@@ -33,4 +33,4 @@ if __name__ == "__main__":
     setattr(__import__(__name__), "__loader__", None)
     
     get_my_python_shell.init()
-    exit(get_my_python_shell.main())
+    sys.exit(get_my_python_shell.main())

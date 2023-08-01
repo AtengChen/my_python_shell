@@ -298,4 +298,4 @@ In [6]╭→
 
 ## License
 
-This project is licensed under the [GPL LICENSE](https://github.com/AtengChen/my_python_shell/edit/main/LICENSE "GPL LICENSE")
+This project is licensed under the [GPL LICENSE](LICENSE)

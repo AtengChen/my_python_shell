@@ -3,6 +3,7 @@ A simple and lightweight python shell.
 See README.md for more information.
 """
 
+
 import atexit               # register an atexit func
 import ast                  # check the input is executed by eval or exec
 import builtins             # modify its functions and get the builtin-function list
@@ -30,6 +31,7 @@ import webbrowser           # only for an extension command
 
 from cmd_utils import cmd_list, WINDOWS
 from inspect_utils import get_info as _get_info
+
 
 # set the default vars
 

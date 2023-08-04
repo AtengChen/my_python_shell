@@ -9,6 +9,7 @@ import inspect              # get the module name from a path
 import json                 # saving for history
 import logging              # log the init process
 import os                   # use cmd for controling background colors
+import os.path              # path control
 import pprint               # pretty display of the displayhook
 import pygments             # replace the keywords and builtin-functions with the different colors, needs to install it from pip
 import pygments.formatters  #
@@ -49,6 +50,7 @@ logo = ""
 user_data = [None, None, None, None, None]
 tb_list = []
 config = collections.defaultdict(types.NoneType)
+getch = lambda: None
 
 LIGHT_VERTICAL_AND_RIGHT        =   "  "
 LIGHT_UP_AND_RIGHT              =   "  "
@@ -64,8 +66,8 @@ try:
 except FileExistsError:
     pass
 
-user_storage_file = ".\\.shell\\user_storage.json"
-log_file = ".\\.shell\\init_log.LOG"
+user_storage_file = os.path.dirname(__file__) + "\\.shell\\user_storage.json"
+log_file = os.path.dirname(__file__) + "\\.shell\\init_log.LOG"
 
 logger = logging.getLogger(__name__)
 file_handler = logging.FileHandler(log_file)
@@ -158,23 +160,22 @@ def set_commands():
         global exit_f
         if not args:
             while exit_f:
-                anwser = modified_input(f"Are you sure you want to exit? [Y(yes)/N(no)]: ")
-                if anwser == "Y":
+                answer = ask_yes_no(f"Are you sure you want to exit?")
+                if answer == True:
                     exit_f = False
                     sys.stdout.write("Exiting ...\n")
                     save_data()
                     _exit()
-                elif anwser == "N":
-                    return anwser
-            return
-
-        if (args[0] == "Y") and exit_f:
-            exit_f = False
-            sys.stdout.write("Exiting ...\n")
-            save_data()
-            _exit()
+                elif answer == False:
+                    return answer
         else:
-            return args[0]
+            if args[0] and exit_f:
+                exit_f = False
+                sys.stdout.write("Exiting ...\n")
+                save_data()
+                _exit()
+            else:
+                return args[0]
 
     @Extensions_Commands
     def history(*args, **kwargs): # usage same as the Exit func
@@ -252,16 +253,16 @@ def set_commands():
         global In, Out, theme, user_gbs
         if not args:
             while True:
-                anwser = modified_input(f"Are you sure you want to clear all the data? [Y(yes)/N(no)]: ")
-                if anwser == "Y":
+                answer = ask_yes_no(f"Are you sure you want to clear all the data?")
+                if answer:
                     In = []
                     Out = {}
                     break
-                elif anwser == "N":
+                elif answer == False:
                     break
-            return anwser
+            return answer
         else:
-            if args[0] == "Y":
+            if args[0]:
                 In = []
                 Out = {}
             return args[0]
@@ -381,7 +382,7 @@ def get_color(idx):
 
 
 def modified_input(text=""):
-    global prompt, _input, _print
+    global prompt, _input, _print, indent
     text_list = str(text).split("\n")
     if len(text_list) <= 1:
         return _input(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {text}")
@@ -392,7 +393,7 @@ def modified_input(text=""):
 
 
 def modified_print(text="", dent=0, *args, **kwargs):
-    global prompt, _print
+    global prompt, _print, indent
     text_list = str(text).split("\n")
     tab = '\t'
     if len(text_list) <= 1:
@@ -423,6 +424,45 @@ def on_exit():
         exit_f = False
         exit(1)
 
+
+def ask_yes_no(question, options=["y", "n"]):
+    global prompt, indent, getch
+
+    if len(options) != 2:
+        raise ValueError("Options length must be two.")
+
+    if WINDOWS:
+        import msvcrt
+
+        getch = msvcrt.getch
+        del msvcrt
+    else:
+        import termios, tty
+
+        def getch():
+            fd = sys.stdin.fileno()
+            old_settings = termios.tcgetattr(fd)
+            try:
+                tty.setraw(sys.stdin.fileno())
+                ch = sys.stdin.read(1)
+            finally:
+                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+            return ch
+
+        del termios, tty
+
+    sys.stdout.write(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {question} [{options[0]}/{options[1]}]")
+    sys.stdout.flush()
+    answer = getch().decode("latin").lower()
+    sys.stdout.write("\n")
+    if answer in options:
+        if answer == "y":
+            return True
+        else:
+            return False
+    else:
+        return None
+        
 
 def modified_displayhook(obj):
     """
@@ -462,7 +502,7 @@ def modified_displayhook(obj):
         sys.__displayhook__(obj)
 
 
-def modified_traceback(exc):
+def modified_traceback(exc, show_detail=False):
     """
     A modified version of python's traceback
     """
@@ -484,7 +524,7 @@ def modified_traceback(exc):
             func_name = "<module>"
             error_code = In[-1]
 
-        hide_detail = (filename in __file__) and (not config["debug_f"])
+        hide_detail = ((filename in __file__) and (not config["debug_f"])) and (not show_detail)
         if hide_detail:
             continue
         err_func_type = ""
@@ -552,7 +592,7 @@ def modified_traceback(exc):
         result += line + "\n"
     else:
         err_cause = f": {exc}" if str(exc) else ""
-        result += termcolor.colored(f"\nInternal Error: {type(exc).__name__}{err_cause}\n", *get_color(7))
+        result += termcolor.colored(f"\nInternal Error: {type(exc).__name__}{err_cause}\n\n", *get_color(7)) + modified_traceback(exc, show_detail=True)
     return result
 
 
@@ -768,7 +808,8 @@ def init(write_banner=True):
                 "_": None,
                 "extend_commands": Extensions_Commands,
                 "modules": modules,
-                "get_info": get_info}
+                "get_info": get_info,
+                "ask_yes_no": ask_yes_no}
 
     load_user_modules()
     user_gbs["modules"] = user_gbs["modules"]()
@@ -827,8 +868,8 @@ def init(write_banner=True):
         sys.stdin = sys.__stdin__
         sys.stderr = sys.__stderr__
         sys.displayhook = sys.__displayhook__
-        sys.excepthook = sys.__excepthook__
-        sys.stderr.write(modified_traceback(args[1]))
+        sys.excepthook = on_error
+        sys.stderr.write("Internal Error: \n\n" + modified_traceback(args[1], show_detail=True))
         init(write_banner=False)
         main()
     
@@ -854,7 +895,7 @@ def init(write_banner=True):
          |___/         |___/             A simple shell that was easy to use
     """
 
-    banner = f"\n{termcolor.colored(logo, *get_color(6))}\n\n{81 * chr(9472)}\n\n " \
+    banner = f"\n{termcolor.colored(logo, *get_color(6))}\n\n{81 * LIGHT_HORIZONTAL}\n\n " \
              f"Features:\n" \
              f"    {LIGHT_DOWN_AND_RIGHT}{LIGHT_HORIZONTAL}  Runs the code in a sandbox (User namespace)\n" \
              f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Supports indented code\n" \
@@ -864,7 +905,7 @@ def init(write_banner=True):
              f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Uses Unicode characters for better TUI appearance\n" \
              f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Coloring the traceback\n" \
              f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Change the theme\n" \
-             f"    {LIGHT_UP_AND_RIGHT}{LIGHT_HORIZONTAL}  Can extend using the extend_commands decorator. (Type `extend_commands.help_commands()` to see all the commands.)\n\n{81 * chr(9472)}\n\n" \
+             f"    {LIGHT_UP_AND_RIGHT}{LIGHT_HORIZONTAL}  Can extend using the extend_commands decorator. (Type `extend_commands.help_commands()` to see all the commands.)\n\n{81 * LIGHT_HORIZONTAL}\n\n" \
              f"\t\t\t\tHappy Using!\n\n\n"
 
     logger.info("Initializing shell successful.")
@@ -908,6 +949,5 @@ else:
     sys.stderr.flush()
     os.system("PAUSE")
     
-    if os.system(".\__main__.py"):
+    if os.system("python " + os.path.dirname(__file__)):
         raise Exception("`__main__.py` not found")
-        os.system("PAUSE")

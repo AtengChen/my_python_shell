@@ -1,3 +1,8 @@
+"""
+A simple and lightweight python shell.
+See README.md for more information.
+"""
+
 import atexit               # register an atexit func
 import ast                  # check the input is executed by eval or exec
 import builtins             # modify its functions and get the builtin-function list
@@ -76,6 +81,7 @@ file_handler.setFormatter(formatter)
 
 logger.addHandler(file_handler)
 
+
 class modules:
     def __call__(self):
         modules = []
@@ -83,6 +89,7 @@ class modules:
             if not i.startswith("__"):
                 modules.append(i)
         return modules
+
 
 class Extensions_Commands:
     """
@@ -117,6 +124,7 @@ class Extensions_Commands:
             setattr(user_gbs["extend_commands"], func.__name__, _cls())
             if not interact_f:
                 logger.info(f"Setting extension command {func.__name__} successful")
+            
             del _c
             return _cls()
         else:
@@ -130,6 +138,7 @@ class Extensions_Commands:
             for i in dir(self):
                 if hasattr(getattr(self, i), "f"):
                     cmds += f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  {i}\n"
+
             sys.stdout.write(cmds)
             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_UP_AND_RIGHT}  Please type `extend_commands.help_commands('[your command here]')` for a specific command.\n")
         else:
@@ -147,6 +156,7 @@ class Extensions_Commands:
                         else:
                             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  No documentation for command `{cmd}`\n")
                         return True
+            
             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  Couldn't find command `{cmd}`\n")
             return False
     
@@ -168,6 +178,7 @@ def set_commands():
                     _exit()
                 elif answer == False:
                     return answer
+
         else:
             if args[0] and exit_f:
                 exit_f = False
@@ -186,6 +197,7 @@ def set_commands():
         Type `history([history id])` for a specific input 
         """
         global Out, In
+
         if not args:
             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  History:\n")
             if Out:
@@ -195,16 +207,20 @@ def set_commands():
                     if len(i) > 10:
                         i = i[:10]
                         i += "..."
+                    
                     o = o.split("\n")[0]
                     if len(o) > 20:
                         o = o[:20]
                         o += "..."
+                    
                     sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{idx}\t\t\t{color_code(i)}\t\t\t{o}\n")
                 sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n")
                 return
             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \tYou don't have any inputs yet! \n{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n")
             return
+        
         sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  History number {args[0]}:\n")
+        
         try:
             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{color_code(Out[str(args[0])][0])}\t{Out[str(args[0])][1]}\n")
         except KeyError:
@@ -227,6 +243,7 @@ def set_commands():
             url = modified_input("Please enter your URL: ")
             webbrowser.open(url)
             return repr(url)
+
         webbrowser.open(args[0])
         return args[0]
     
@@ -241,10 +258,13 @@ def set_commands():
                     for i in res.split("\n"):
                         sys.stdout.write(f"       {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
                 return cmd
+
             res = os.popen(args[0]).read()
+
             if res:
                 for i in res.split("\n"):
                     sys.stdout.write(f"      {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
+
             return args[0]
 
     @Extensions_Commands
@@ -307,6 +327,7 @@ def set_commands():
             else:
                 sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  The requested error index doesn't exists.\n")
             return args[0]
+
         for tb in range(len(tb_list)):
             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  error {tb + 1}: \n")
             for line in tb_list[tb].split("\n"):
@@ -328,6 +349,7 @@ def set_commands():
     
 def load_user_data(storage_file=user_storage_file):
     global In, Out, theme, user_data, logger, user_storage_file, user_gbs, tb_list
+
     logger.info(f"Loading user storage `{storage_file}`")
     try:
         user_storage = open(storage_file, "r")
@@ -357,6 +379,7 @@ def load_user_data(storage_file=user_storage_file):
 
 def load_user_modules():
     global user_gbs, logger
+
     for m, imp in sys.modules.items():
         if not m.startswith("_"):
             logger.info(f"Loading module {m}")
@@ -389,6 +412,7 @@ def modified_input(text=""):
     else:
         for i in text_list[:-1]:
             _print(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {i}")
+
         return _input(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {text_list[-1]}")
 
 
@@ -401,6 +425,7 @@ def modified_print(text="", dent=0, *args, **kwargs):
     else:
         for i in text_list[:-1]:
             _print(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {tab * dent}{i}")
+
         _print(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  {tab * dent}{text_list[-1]}")
 
 
@@ -433,7 +458,6 @@ def ask_yes_no(question, options=["y", "n"]):
 
     if WINDOWS:
         import msvcrt
-
         getch = msvcrt.getch
         del msvcrt
     else:
@@ -455,6 +479,7 @@ def ask_yes_no(question, options=["y", "n"]):
     sys.stdout.flush()
     answer = getch().decode("latin").lower()
     sys.stdout.write("\n")
+
     if answer in options:
         if answer == "y":
             return True
@@ -487,17 +512,18 @@ def modified_displayhook(obj):
 
             if not copy_cache:
                 repr_obj = pprint.pformat(obj, indent=4) if hasattr(obj, "__iter__") else repr(obj)
-
-
+                
             Out[len(In)] = (In[-1], repr_obj)
             user_gbs["_"] = obj
             if "\n" in repr_obj:
                 sys.stdout.write(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": \n\n{repr_obj}\n")
             else:
                 sys.stdout.write(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": {repr_obj}\n")
+            
             sys.stdout.write(f"\x1b]0;My python shell - {repr_obj}\x07\r\n")
             if config["copy_result"]:
                 pyperclip.copy(repr_obj)
+
     except IndexError: # if encounters a bug
         sys.__displayhook__(obj)
 
@@ -518,6 +544,7 @@ def modified_traceback(exc, show_detail=False):
     for tb in traceback_list:
         filename, line_num, func_name, error_code = tb
         err_count += 1
+
         if is_syntaxerror and (err_count == len(traceback_list)):
             filename = f"<shell-{len(In)}>"
             line_num = exc.lineno
@@ -527,6 +554,7 @@ def modified_traceback(exc, show_detail=False):
         hide_detail = ((filename in __file__) and (not config["debug_f"])) and (not show_detail)
         if hide_detail:
             continue
+
         err_func_type = ""
         if func_name == "<module>":
             try:
@@ -552,6 +580,7 @@ def modified_traceback(exc, show_detail=False):
                     display_filename = f"File {termcolor.colored(filename, *get_color(4))}"
                 else:
                     display_filename = f"Shell {termcolor.colored(filename, *get_color(4))}"
+
         if (err_count > 4) and isinstance(exc, RecursionError):
             tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  ...\n"
             break
@@ -560,6 +589,7 @@ def modified_traceback(exc, show_detail=False):
         try:
             error_input = In[int(match_filename(filename)) - 1].split("\n")
             error_code = error_input[line_num - 1]
+
             for line_index in range(len(error_input)):
                 if not (line_index == line_num - 1):
                     display_line_number = str(line_index + 1)
@@ -568,6 +598,7 @@ def modified_traceback(exc, show_detail=False):
                 else:
                     display_line_number = RIGHTWARDS_ARROW + ' ' + str(line_num)
                     display_line_number = display_line_number.rjust(len(str(len(error_input) + 1)) - len(display_line_number) + 5)
+                    
                     if is_syntaxerror and (err_count == len(traceback_list)):
                         c = error_code.replace(error_code.strip(), color_code(error_code, exc.offset))
                         display_code += f"  {LIGHT_VERTICAL}  {termcolor.colored(display_line_number, *get_color(1))}{LIGHT_VERTICAL} {c}\n"
@@ -584,6 +615,7 @@ def modified_traceback(exc, show_detail=False):
                        f":{termcolor.colored(line_num, *get_color(5))}, " \
                        f"at {termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
                        f"  {LIGHT_VERTICAL}\n{display_code}  {LIGHT_VERTICAL}\n"
+
     if tb_main:
         if is_syntaxerror:
             result += f"{line}\nTraceback (most recent call last):\n{tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(type(exc).__name__, *get_color(7))}: Invalid Syntax\n"
@@ -593,6 +625,7 @@ def modified_traceback(exc, show_detail=False):
     else:
         err_cause = f": {exc}" if str(exc) else ""
         result += termcolor.colored(f"\nInternal Error: {type(exc).__name__}{err_cause}\n\n", *get_color(7)) + modified_traceback(exc, show_detail=True)
+    
     return result
 
 
@@ -601,7 +634,9 @@ def parse_code(inp_code):
     Parse the code
     """
     global frame_name, user_gbs, Out
+
     mod = ast.parse(inp_code, filename=frame_name)
+
     if len(mod.body) == 0:
         return
 
@@ -635,12 +670,15 @@ def input_code(pmt=None):
             prompt = pmt = termcolor.colored(f"\nIn [{len(In) + 1}]", *get_color(3))
         sys.ps1 = f"{pmt}{LIGHT_ARC_DOWN_AND_RIGHT}{RIGHTWARDS_ARROW} "
         inp_code = _input(sys.ps1)
+
     except EOFError:
         In.append(on_exit())
         inp_code = In[-1]
+
     except RuntimeError:
         exit_f = False
         _exit()
+
     if not code_is_complete(inp_code):
         if not exec_flag:
             block = ""
@@ -667,6 +705,7 @@ def input_code(pmt=None):
             exc = SyntaxError("invalid syntax")
             exc.lineno = 1
             raise exc
+
     In.append(inp_code)
     frame_name = f"<shell-{len(In)}>"
     return inp_code
@@ -685,6 +724,7 @@ def color_code(code_string, offset=None):
             result = f"{left}{termcolor.colored(char, 'white', 'on_yellow')}{right}"
         else:
             result = pygments.highlight(code_string, pygments.lexers.PythonLexer(), pygments.formatters.TerminalFormatter(bg="dark")).split("\n")[0]
+    
     result = result.replace("\t", f"\b{termcolor.colored(LIGHT_VERTICAL, attrs=['dark'])}\t")
 
     return result
@@ -698,6 +738,7 @@ def modified_write(string, color=colors[theme][8], on_color=theme, **kwargs):
 
 def get_info(obj):
     info_data = _get_info(obj)
+
     for k, v in info_data.items():
         if k == "attributes":
             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  attributes: \n")
@@ -764,6 +805,7 @@ def init(write_banner=True):
     else:
         if sys.__stdin__:
             run_from_console = True
+
     if not run_from_console:
         if not config["debug_f"]:
             sys.stderr.write("\nCouldn't detect console window, you need to run this program in a terminal.\n")
@@ -837,6 +879,7 @@ def init(write_banner=True):
     exec_flag = False
     exit_f = True
     frame_name = f"<shell-{len(In)}>"
+
     if not config["nocolor"]:
         indent = 15
         colors = {"black": ["light_red", "light_yellow", "light_magenta", "light_green", "magenta", "yellow", "light_cyan", "red", "white", "blue"],
@@ -920,6 +963,7 @@ def main():
     """
     global exec_flag, user_gbs, frame_name, prompt, err_pattern, interact_f, code, exit_f, tb_list, pretty_traceback
     interact_f = True
+
     try:
         while True:
             try:
@@ -936,6 +980,7 @@ def main():
                 tb_list.append(result)
             else:
                 user_gbs["__dict__"] = user_gbs
+
     except KeyboardInterrupt as e:
         sys.stderr.write(termcolor.colored(f"\nKeyboardInterrupt\n", *get_color(7)))
         main()

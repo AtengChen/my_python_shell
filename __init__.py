@@ -27,6 +27,7 @@ import termcolor            # color of the terminal, needs to install it from pi
 import traceback            # capture the error info and color it
 import types                # get NoneType
 import unicodedata          # print unicode charactars
+import warnings              # 
 import webbrowser           # only for an extension command
 
 from cmd_utils import cmd_list, WINDOWS
@@ -742,15 +743,15 @@ def get_info(obj):
     info_data = _get_info(obj)
 
     for k, v in info_data.items():
-        if k == "attributes":
+        if k == "document":
+            sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  document: \n")
+            modified_print(v, dent=1)
+        elif k == "attributes":
             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  attributes: \n")
             for i in v:
                 sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{i}\n")
         elif (k == "name") or (k == "type"):
             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  {k}:\t\t{color_code(v)}\n")
-        elif k == "document":
-            sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  document: \n")
-            modified_print(v, dent=1)
         else:
             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  {k}:\t\t{v}\n")
 
@@ -963,7 +964,7 @@ def main():
     """
     Main part of the shell
     """
-    global exec_flag, user_gbs, frame_name, prompt, err_pattern, interact_f, code, exit_f, tb_list, pretty_traceback
+    global exec_flag, user_gbs, frame_name, prompt, err_pattern, interact_f, code, exit_f, tb_list, pretty_traceback, _exit
     interact_f = True
 
     try:
@@ -972,6 +973,11 @@ def main():
                 code = input_code()
                 parse_code(code)
                 save_data()
+            except SystemExit:
+                if exit_f:
+                    warnings.warn('To exit, please use EOF, exit or quit.')
+                else:
+                    _exit()
             except Exception as e:
                 Out[len(In)] = (code, termcolor.colored(e, *get_color(7)))
                 if config["pretty_traceback"]:

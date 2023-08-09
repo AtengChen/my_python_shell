@@ -9,6 +9,7 @@ import ast                  # check the input is executed by eval or exec
 import builtins             # modify its functions and get the builtin-function list
 import collections          # store the config data
 import colorama             # initalize the terminal, needs to install it from pip
+import copy                 # copying objects
 import ctypes               # Windows console api
 import datetime             # only for an extension command
 import inspect              # get the module name from a path
@@ -30,8 +31,8 @@ import unicodedata          # print unicode charactars
 import warnings              # 
 import webbrowser           # only for an extension command
 
-from cmd_utils import cmd_list, WINDOWS
-from inspect_utils import get_info as _get_info
+from utils.command import cmd_list, WINDOWS
+from utils.inspect_obj import get_info as _get_info
 
 
 # set the default vars
@@ -59,6 +60,7 @@ user_data = [None, None, None, None, None]
 tb_list = []
 config = collections.defaultdict(types.NoneType)
 getch = lambda: None
+on_error = lambda *args: None
 
 LIGHT_VERTICAL_AND_RIGHT        =   "  "
 LIGHT_UP_AND_RIGHT              =   "  "
@@ -210,7 +212,7 @@ def set_commands():
                     if len(i) > 10:
                         i = i[:10]
                         i += "..."
-                    
+                        
                     o = o.split("\n")[0]
                     if len(o) > 20:
                         o = o[:20]
@@ -419,17 +421,19 @@ def modified_input(text=""):
         return _input(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {text_list[-1]}")
 
 
-def modified_print(text="", dent=0, *args, **kwargs):
+def modified_print(*args, dent=0, stop=True, sep=" ", **kwargs):
     global prompt, _print, indent
-    text_list = str(text).split("\n")
+    text = sep.join(map(str, args))
+    text_list = text.split("\n")
     tab = '\t'
     if len(text_list) <= 1:
-        _print(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  {tab * dent}{text}", *args, **kwargs)
+        _print(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  {tab * dent}{text}", **kwargs)
     else:
         for i in text_list[:-1]:
-            _print(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {tab * dent}{i}")
+            _print(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {tab * dent}{i}", **kwargs)
 
-        _print(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  {tab * dent}{text_list[-1]}")
+        if stop:
+            _print(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  {tab * dent}{text_list[-1]}", **kwargs)
 
 
 def match_filename(name):
@@ -497,6 +501,7 @@ def modified_displayhook(obj):
     The modified version of sys.displayhook
     """
     global Out, In, user_gbs, config
+
     try:
         if obj is not None:
             copy_cache = False
@@ -527,7 +532,7 @@ def modified_displayhook(obj):
             if config["copy_result"]:
                 pyperclip.copy(repr_obj)
 
-    except IndexError: # if encounters a bug
+    except (IndexError, AttributeError): # if encounters a bug
         sys.__displayhook__(obj)
 
 
@@ -655,7 +660,7 @@ def parse_code(inp_code):
         return
 
     if expr is not None:
-        sys.displayhook(eval(compile(expr, frame_name, mode='eval'), user_gbs, user_gbs))
+        modified_displayhook(eval(compile(expr, frame_name, mode='eval'), user_gbs, user_gbs))
 
 
 def code_is_complete(inp_code):
@@ -745,11 +750,11 @@ def get_info(obj):
     for k, v in info_data.items():
         if k == "document":
             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  document: \n")
-            modified_print(v, dent=1)
+            modified_print(v, dent=1, stop=False)
         elif k == "attributes":
             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  attributes: \n")
             for i in v:
-                sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{i}\n")
+                sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{color_code(i)}\n")
         elif (k == "name") or (k == "type"):
             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  {k}:\t\t{color_code(v)}\n")
         else:
@@ -775,6 +780,7 @@ def init(write_banner=True):
            exit_f, \
            prompt, \
            interact_f, \
+           on_error, \
            colors, \
            theme, \
            banner, \
@@ -853,7 +859,7 @@ def init(write_banner=True):
                 "_": None,
                 "extend_commands": Extensions_Commands,
                 "modules": modules,
-                "get_info": get_info,
+                "quick_help": get_info,
                 "ask_yes_no": ask_yes_no}
 
     load_user_modules()
@@ -907,15 +913,16 @@ def init(write_banner=True):
     def on_exit():
         return repr(user_gbs["Exit"])
     
-    def on_error(*args):
+    def _on_error(*args):
         global exit_f
         os.system("PAUSE")
         sys.stdout = sys.__stdout__
         sys.stdin = sys.__stdin__
         sys.stderr = sys.__stderr__
         sys.displayhook = sys.__displayhook__
-        sys.excepthook = on_error
-        sys.stderr.write("Internal Error: \n\n" + modified_traceback(args[1], show_detail=True))
+        sys.excepthook = sys.__excepthook__
+        sys.stderr.write(f"Internal Error: \n\n{modified_traceback(args[1], show_detail=True)}\n"
+                         f"If you suspect this is a My_Python_Shell issue, please report it at: https://github.com/AtengChen/my_python_shell/issues\n")
         init(write_banner=False)
         main()
     
@@ -923,7 +930,10 @@ def init(write_banner=True):
     logger.info("Registering exit-func successful")
 
     sys.displayhook = modified_displayhook
-    sys.excepthook = on_error
+
+    on_error = _on_error
+
+    sys.excepthook = copy.copy(on_error)
 
     prompt = termcolor.colored(f"\nIn [0]", *get_color(3))
     sys.ps1 = f"{prompt}{LIGHT_ARC_DOWN_AND_RIGHT}{RIGHTWARDS_ARROW} "
@@ -964,7 +974,7 @@ def main():
     """
     Main part of the shell
     """
-    global exec_flag, user_gbs, frame_name, prompt, err_pattern, interact_f, code, exit_f, tb_list, pretty_traceback, _exit
+    global exec_flag, user_gbs, frame_name, prompt, err_pattern, interact_f, code, exit_f, tb_list, pretty_traceback, _exit, on_error
     interact_f = True
 
     try:
@@ -978,6 +988,8 @@ def main():
                     warnings.warn('To exit, please use EOF, exit or quit.')
                 else:
                     _exit()
+            except RuntimeError as e:
+                on_error(None, e, None)
             except Exception as e:
                 Out[len(In)] = (code, termcolor.colored(e, *get_color(7)))
                 if config["pretty_traceback"]:

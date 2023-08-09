@@ -103,10 +103,12 @@ Here are a few examples to help you get started:
   - Type `tb_history` for the whole traceback history.
   - Type `cls` to clear the screen.
   - Type `license` to see the license of this shell. (Type `python_license` to see python's license)
- ### Others
+ ### Builtin tools
   - Type `extend_commands.help_commands()` to see all the commands.
   - Type `extend_commands.help_commands('[your command here]')` for a specific command.
   - Type `win_term.['your cmd here'](['options-1'], ['options-2'], ['options-3'], ...)`. (only on Windows.)
+  - Type `modules.['your builtin module here']` to get the module you want.
+  - Type `quick_help.('[your object]')` to get a quick help for a object.
 
  ### How to register a command
  

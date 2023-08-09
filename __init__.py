@@ -427,7 +427,10 @@ def modified_print(*args, dent=0, stop=True, sep=" ", **kwargs):
     text_list = text.split("\n")
     tab = '\t'
     if len(text_list) <= 1:
-        _print(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  {tab * dent}{text}", **kwargs)
+        if stop:
+            _print(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  {tab * dent}{text}", **kwargs)
+        else:
+            _print(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {tab * dent}{text}", **kwargs)
     else:
         for i in text_list[:-1]:
             _print(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {tab * dent}{i}", **kwargs)

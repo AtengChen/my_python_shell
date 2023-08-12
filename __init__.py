@@ -62,6 +62,15 @@ config = collections.defaultdict(types.NoneType)
 getch = lambda: None
 on_error = lambda *args: None
 
+HAS_GOOGLE_SEARCH = None
+
+try:
+    import googlesearch
+except ImportError:
+    HAS_GOOGLE_SEARCH = False
+else:
+    HAS_GOOGLE_SEARCH = True
+
 LIGHT_VERTICAL_AND_RIGHT        =   "  "
 LIGHT_UP_AND_RIGHT              =   "  "
 LIGHT_DOWN_AND_RIGHT            =   "  "
@@ -81,7 +90,7 @@ log_file = os.path.dirname(__file__) + "\\.shell\\init_log.LOG"
 
 logger = logging.getLogger(__name__)
 file_handler = logging.FileHandler(log_file)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(relativeCreated)d : %(levelname)s : %(message)s')
 file_handler.setFormatter(formatter)
 
 logger.addHandler(file_handler)
@@ -629,10 +638,14 @@ def modified_traceback(exc, show_detail=False):
 
     if tb_main:
         if is_syntaxerror:
-            result += f"{line}\nTraceback (most recent call last):\n{tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(type(exc).__name__, *get_color(7))}: Invalid Syntax\n"
+            err_msg = f"{type(exc).__name__}: Invalid Syntax"
         else:
-            result += f"{line}\nTraceback (most recent call last):\n{tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(type(exc).__name__, *get_color(7))}: {exc}\n"
+            err_msg = f"{type(exc).__name__}: {exc}"
+        result += f"{line}\nTraceback (most recent call last):\n{tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(err_msg, *get_color(7))}\n"
         result += line + "\n"
+        if config["detail_err"]:
+            website = googlesearch.lucky(err_msg)
+            result += f"\nFor more imformation about this error, please look at: \n\t{termcolor.colored(website, *get_color(10), ['underline'])}\n"
     else:
         err_cause = f": {exc}" if str(exc) else ""
         result += termcolor.colored(f"\nInternal Error: {type(exc).__name__}{err_cause}\n\n", *get_color(7)) + modified_traceback(exc, show_detail=True)
@@ -645,7 +658,7 @@ def parse_code(inp_code):
     Parse the code
     """
     global frame_name, user_gbs, Out
-
+    
     mod = ast.parse(inp_code, filename=frame_name)
 
     if len(mod.body) == 0:
@@ -656,7 +669,7 @@ def parse_code(inp_code):
         del mod.body[-1]
     else:
         expr = None
-
+    
     if len(mod.body):
         exec(compile(mod, frame_name, mode='exec'), user_gbs, user_gbs)
         Out[len(In)] = (inp_code, "")
@@ -863,7 +876,8 @@ def init(write_banner=True):
                 "extend_commands": Extensions_Commands,
                 "modules": modules,
                 "quick_help": get_info,
-                "ask_yes_no": ask_yes_no}
+                "ask_yes_no": ask_yes_no,
+                "config": config}
 
     load_user_modules()
     user_gbs["modules"] = user_gbs["modules"]()
@@ -894,8 +908,8 @@ def init(write_banner=True):
 
     if not config["nocolor"]:
         indent = 15
-        colors = {"black": ["light_red", "light_yellow", "light_magenta", "light_green", "magenta", "yellow", "light_cyan", "red", "white", "blue"],
-              "white": ["light_green", "light_blue", "light_green", "light_magenta", "green", "blue", "red", "green", "black", "yellow"]}
+        colors = {"black": ["light_red", "light_yellow", "light_magenta", "light_green", "magenta", "yellow", "light_cyan", "red", "white", "blue", "light_blue"],
+              "white": ["light_green", "light_blue", "light_green", "light_magenta", "green", "blue", "red", "green", "black", "yellow", "light_yellow"]}
     else:
         indent = 10
     sys.stdout.write = modified_write
@@ -995,9 +1009,9 @@ def main():
                 on_error(None, e, None)
             except Exception as e:
                 Out[len(In)] = (code, termcolor.colored(e, *get_color(7)))
-                if config["pretty_traceback"]:
+                if config["pretty_traceback"] or config["pretty_traceback"] == None:
                     result = modified_traceback(e)
-                else:
+                elif config["pretty_traceback"] == False:
                     result = traceback.format_exc()
                 sys.stdout.write(result)
                 tb_list.append(result)

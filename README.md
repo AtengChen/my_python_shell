@@ -11,6 +11,7 @@ Welcome to My Python Shell! This is a Python shell that provides an interactive 
 - Displays the latest output on the terminal title for quick reference.
 - Utilizes Unicode characters for an enhanced TUI appearance.
 - Colors the traceback for improved readability.
+- Give traceback tips
 - Allows changing the shell's theme to suit personal preferences.
 - Can be extended using the extend_commands decorator. Type `extend_commands.help_commands()` to see all available commands.
 - ......
@@ -43,7 +44,7 @@ my_python_shell.bat [-h] [-d] [--noprettytb] [-a] [--nocopyresult] [--nocolor]
 
 **Linux**
 ```
-python3 . [-h] [-d] [--noprettytb] [-a] [--nocopyresult] [--nocolor]
+python3 . [-h] [-d] [--noprettytb] [-a] [--nocopyresult] [--nocolor] [--nodetailerr]
 ```
 
 Usage of the options:
@@ -54,6 +55,7 @@ Usage of the options:
   -a, --ascii     Enable ascii charactars
   --nocopyresult  Don't copy the result of a expression after evaluating it
   --nocolor       No color display
+  --nodetailerr   No detailed error
 ```
 #### After starting the shell
 1. You should now see the My Python Shell welcome message and the interactive prompt.

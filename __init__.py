@@ -58,9 +58,12 @@ banner = ""
 logo = ""
 user_data = [None, None, None, None, None]
 tb_list = []
+err_url_dict = {}
 config = collections.defaultdict(types.NoneType)
 getch = lambda: None
 on_error = lambda *args: None
+LINE = ""
+website = "https://github.com/AtengChen/my_python_shell"
 
 HAS_GOOGLE_SEARCH = None
 
@@ -87,6 +90,7 @@ except FileExistsError:
 
 user_storage_file = os.path.dirname(__file__) + "\\.shell\\user_storage.json"
 log_file = os.path.dirname(__file__) + "\\.shell\\init_log.LOG"
+error_storage_file = os.path.dirname(__file__) + "\\.shell\\error_urls.json"
 
 logger = logging.getLogger(__name__)
 file_handler = logging.FileHandler(log_file)
@@ -355,33 +359,36 @@ def set_commands():
 
     @Extensions_Commands
     def license(*args, **kwargs):
-        sys.stdout.write(f"\n{LIGHT_HORIZONTAL * 80}\n")
+        sys.stdout.write(f"\n{LINE}\n")
         if os.system("more LICENSE"):
             sys.stderr.write("\nError reading `LICENSE` file, please check your file have downloaded correctly.")
-        sys.stdout.write(f"\n{LIGHT_HORIZONTAL * 80}\n")
+        sys.stdout.write(f"\n{LINE}\n")
 
     
 def load_user_data(storage_file=user_storage_file):
-    global In, Out, theme, user_data, logger, user_storage_file, user_gbs, tb_list
+    global In, Out, theme, user_data, logger, user_storage_file, user_gbs, tb_list, err_url_dict, error_storage_file
 
     logger.info(f"Loading user storage `{storage_file}`")
     try:
-        user_storage = open(storage_file, "r")
-        user_data = json.loads(user_storage.read())
-        In, Out, theme, tb_list = user_data
-        user_storage.close()
+        with open(storage_file, "r") as user_storage, open(error_storage_file, "r") as err_storage:
+            user_data = json.load(user_storage)
+            In, Out, theme, tb_list = user_data
+            err_url_dict = json.load(err_storage)
+
         logger.info("Loading user storage successful")
     except FileNotFoundError:
         In = []
         Out = {}
         theme = "black"
         tb_list = []
+        error_storage_file = {}
         logger.warning("Couldn't find user storage file")
     except Exception as e:
         In = []
         Out = {}
         theme = "black"
         tb_list = []
+        err_url_dict = {}
         logger.error(f'Error opening {storage_file}: {e}')
         sys.stderr.write(f"Error ocurred when opening {storage_file}:\n")
         result = modified_traceback(e)
@@ -404,10 +411,11 @@ def load_user_modules():
 
 
 def save_data():
-    global user_data, In, Out, theme, user_storage_file, tb_list
+    global user_data, In, Out, theme, user_storage_file, tb_list, error_storage_file, err_url_dict
     user_data = (In, Out, theme, tb_list)
-    with open(user_storage_file, "w") as f:
+    with open(user_storage_file, "w") as f, open(error_storage_file, "w") as f2:
         json.dump(user_data, f)
+        json.dump(err_url_dict, f2)
 
 
 def get_color(idx):
@@ -467,6 +475,10 @@ def on_exit():
         sys.stderr.write("My Python Shell Internal Error: \n" + modified_traceback(e))
         exit_f = False
         exit(1)
+
+
+def color_website(url):
+    return termcolor.colored(url, *get_color(10), ['underline'])
 
 
 def ask_yes_no(question, options=["y", "n"]):
@@ -543,6 +555,7 @@ def modified_displayhook(obj):
             sys.stdout.write(f"\x1b]0;My python shell - {repr_obj}\x07\r\n")
             if config["copy_result"]:
                 pyperclip.copy(repr_obj)
+            sys.stdout.write(LINE + "\n")
 
     except (IndexError, AttributeError): # if encounters a bug
         sys.__displayhook__(obj)
@@ -552,9 +565,8 @@ def modified_traceback(exc, show_detail=False):
     """
     A modified version of python's traceback
     """
-    global code, In, user_gbs, config
-
-    line = f'{LIGHT_HORIZONTAL}' * 50
+    global code, In, user_gbs, config, website, err_url_dict
+    
     traceback_list = traceback.extract_tb(exc.__traceback__)
     result = ""
     tb_main = ""
@@ -641,15 +653,18 @@ def modified_traceback(exc, show_detail=False):
             err_msg = f"{type(exc).__name__}: Invalid Syntax"
         else:
             err_msg = f"{type(exc).__name__}: {exc}"
-        result += f"{line}\nTraceback (most recent call last):\n{tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(err_msg, *get_color(7))}\n"
-        result += line + "\n"
-        if config["detail_err"]:
-            website = googlesearch.lucky(err_msg)
-            result += f"\nFor more imformation about this error, please look at: \n\t{termcolor.colored(website, *get_color(10), ['underline'])}\n"
+        result += f"{LINE}\nTraceback (most recent call last):\n{tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(err_msg, *get_color(7))}\n\n"
+        if config["detail_err"] and (not show_detail):
+            if err_msg in err_url_dict:
+                url = err_url_dict[err_msg]
+            else:
+                url = googlesearch.lucky(err_msg)
+                err_url_dict[err_msg] = url
+
+            result += f"\nFor more imformation about this error, please look at: \n\t{color_website(url)}\n\n{LINE}\n\n"
     else:
         err_cause = f": {exc}" if str(exc) else ""
-        result += termcolor.colored(f"\nInternal Error: {type(exc).__name__}{err_cause}\n\n", *get_color(7)) + modified_traceback(exc, show_detail=True)
-    
+        result += termcolor.colored(f"\nInternal Error: {type(exc).__name__}{err_cause}\n\n", *get_color(7)) + modified_traceback(exc, show_detail=True) + "\n" + LINE + "\n"
     return result
 
 
@@ -800,6 +815,7 @@ def init(write_banner=True):
            colors, \
            theme, \
            banner, \
+           LINE, \
            user_data, \
            logger, \
            logo, \
@@ -862,6 +878,8 @@ def init(write_banner=True):
         LIGHT_ARC_UP_AND_RIGHT          =   r"+-"
         RIGHTWARDS_ARROW                =   r"->"
 
+    LINE = (os.get_terminal_size().columns - 2) * LIGHT_HORIZONTAL
+
     load_user_data()
     user_gbs = {"__name__": "__main__",
                 "__doc__": banner,
@@ -872,10 +890,11 @@ def init(write_banner=True):
                 "In": In,
                 "Out": Out,
                 "__dict__": user_gbs,
-                "_": None,
+                "_": In[-1] if In else "",
                 "extend_commands": Extensions_Commands,
                 "modules": modules,
                 "quick_help": get_info,
+                "get_info": get_info, 
                 "ask_yes_no": ask_yes_no,
                 "config": config}
 
@@ -939,7 +958,8 @@ def init(write_banner=True):
         sys.displayhook = sys.__displayhook__
         sys.excepthook = sys.__excepthook__
         sys.stderr.write(f"Internal Error: \n\n{modified_traceback(args[1], show_detail=True)}\n"
-                         f"If you suspect this is a My_Python_Shell issue, please report it at: https://github.com/AtengChen/my_python_shell/issues\n")
+                         f"If you suspect this is a My_Python_Shell issue, please report it at: {color_website(website)}\n\n"
+                         f"{LINE}\n\n")
         init(write_banner=False)
         main()
     
@@ -968,7 +988,7 @@ def init(write_banner=True):
          |___/         |___/             A simple shell that was easy to use
     """
 
-    banner = f"\n{termcolor.colored(logo, *get_color(6))}\n\n{81 * LIGHT_HORIZONTAL}\n\n " \
+    banner = f"\n{termcolor.colored(logo, *get_color(6))}\n\n{LINE}\n\n " \
              f"Features:\n" \
              f"    {LIGHT_DOWN_AND_RIGHT}{LIGHT_HORIZONTAL}  Runs the code in a sandbox (User namespace)\n" \
              f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Supports indented code\n" \
@@ -978,7 +998,7 @@ def init(write_banner=True):
              f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Uses Unicode characters for better TUI appearance\n" \
              f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Coloring the traceback\n" \
              f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Change the theme\n" \
-             f"    {LIGHT_UP_AND_RIGHT}{LIGHT_HORIZONTAL}  Can extend using the extend_commands decorator. (Type `extend_commands.help_commands()` to see all the commands.)\n\n{81 * LIGHT_HORIZONTAL}\n\n" \
+             f"    {LIGHT_UP_AND_RIGHT}{LIGHT_HORIZONTAL}  Can extend using the extend_commands decorator. (Type `extend_commands.help_commands()` to see all the commands.)\n\n{LINE}\n\n" \
              f"\t\t\t\tHappy Using!\n\n\n"
 
     logger.info("Initializing shell successful.")

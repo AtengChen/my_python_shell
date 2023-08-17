@@ -381,7 +381,7 @@ def load_user_data(storage_file=user_storage_file):
         Out = {}
         theme = "black"
         tb_list = []
-        error_storage_file = {}
+        err_url_dict = {}
         logger.warning("Couldn't find user storage file")
     except Exception as e:
         In = []
@@ -655,11 +655,12 @@ def modified_traceback(exc, show_detail=False):
             err_msg = f"{type(exc).__name__}: {exc}"
         result += f"{LINE}\nTraceback (most recent call last):\n{tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(err_msg, *get_color(7))}\n\n"
         if config["detail_err"] and (not show_detail):
-            if err_msg in err_url_dict:
-                url = err_url_dict[err_msg]
+            search_string = f"Python {type(exc).__name__}"
+            if search_string in err_url_dict:
+                url = err_url_dict[search_string]
             else:
-                url = googlesearch.lucky(err_msg)
-                err_url_dict[err_msg] = url
+                url = googlesearch.lucky(f"Python {type(exc).__name__}")
+                err_url_dict[search_string] = url
 
             result += f"\nFor more imformation about this error, please look at: \n\t{color_website(url)}\n\n{LINE}\n\n"
     else:

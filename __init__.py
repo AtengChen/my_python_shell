@@ -63,6 +63,8 @@ config = collections.defaultdict(types.NoneType)
 getch = lambda: None
 on_error = lambda *args: None
 LINE = ""
+py_lexer = pygments.lexers.PythonLexer()
+py_formatter = pygments.formatters.TerminalFormatter(bg="dark")
 website = "https://github.com/AtengChen/my_python_shell"
 
 HAS_GOOGLE_SEARCH = None
@@ -481,31 +483,33 @@ def color_website(url):
     return termcolor.colored(url, *get_color(10), ['underline'])
 
 
+if WINDOWS:
+    import msvcrt
+    getch = msvcrt.getch
+    del msvcrt
+else:
+    import termios, tty
+    
+    def getch():
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+    
+    del termios, tty
+
+
+
 def ask_yes_no(question, options=["y", "n"]):
     global prompt, indent, getch
 
     if len(options) != 2:
         raise ValueError("Options length must be two.")
-
-    if WINDOWS:
-        import msvcrt
-        getch = msvcrt.getch
-        del msvcrt
-    else:
-        import termios, tty
-
-        def getch():
-            fd = sys.stdin.fileno()
-            old_settings = termios.tcgetattr(fd)
-            try:
-                tty.setraw(sys.stdin.fileno())
-                ch = sys.stdin.read(1)
-            finally:
-                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-            return ch
-
-        del termios, tty
-
+    
     sys.stdout.write(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {question} [{options[0]}/{options[1]}]")
     sys.stdout.flush()
     answer = getch().decode("latin").lower()
@@ -529,13 +533,13 @@ def modified_displayhook(obj):
     try:
         if obj is not None:
             copy_cache = False
-
-            if (obj == user_gbs["_"]) and (type(obj).__module__ == "builtins"):
-                try:
-                    eval(repr(obj))
-                except SyntaxError:
-                    pass
-                else:
+            can_color = True
+            try:
+                eval(repr(obj))
+            except SyntaxError:
+                can_color = False
+            else:
+                if (obj == user_gbs["_"]) and (type(obj).__module__ == "builtins"):
                     try:
                         repr_obj = Out[str(len(Out))][1]
                         copy_cache = True
@@ -548,12 +552,12 @@ def modified_displayhook(obj):
             Out[len(In)] = (In[-1], repr_obj)
             user_gbs["_"] = obj
             if "\n" in repr_obj:
-                sys.stdout.write(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": \n\n{repr_obj}\n")
+                sys.stdout.write(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": \n\n{color_code(repr_obj, lines=True) if can_color else repr_obj}\n")
             else:
-                sys.stdout.write(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": {repr_obj}\n")
+                sys.stdout.write(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": {color_code(repr_obj) if can_color else repr_obj}\n")
             
             sys.stdout.write(f"\x1b]0;My python shell - {repr_obj}\x07\r\n")
-            if config["copy_result"]:
+            if config["copy_result"] and can_color:
                 pyperclip.copy(repr_obj)
             sys.stdout.write(LINE + "\n")
 
@@ -751,10 +755,12 @@ def input_code(pmt=None):
     return inp_code
 
 
-def color_code(code_string, offset=None):
+def color_code(code_string, offset=None, lines=False):
     """
     colors the code.
     """
+    global py_lexer, py_formatter
+    
     if not config["nocolor"]:
         if offset:
             code_string = code_string.strip()
@@ -762,8 +768,10 @@ def color_code(code_string, offset=None):
             char = code_string[offset - 1]
             right = code_string[offset:]
             result = f"{left}{termcolor.colored(char, 'white', 'on_yellow')}{right}"
+        elif not lines:
+            result = pygments.highlight(code_string, py_lexer, py_formatter).split("\n")[0]
         else:
-            result = pygments.highlight(code_string, pygments.lexers.PythonLexer(), pygments.formatters.TerminalFormatter(bg="dark")).split("\n")[0]
+            result = pygments.highlight(code_string, py_lexer, py_formatter).strip()
     
     result = result.replace("\t", f"\b{termcolor.colored(LIGHT_VERTICAL, attrs=['dark'])}\t")
 
@@ -847,17 +855,17 @@ def init(write_banner=True):
     else:
         if sys.__stdin__:
             run_from_console = True
+    
+    logger.info(f"This is my_python_shell on {sys.platform} terminal")
 
     if not run_from_console:
         if not config["debug_f"]:
             sys.stderr.write("\nCouldn't detect console window, you need to run this program in a terminal.\n")
             sys.exit()
-
-    logger.info(f"This is my_python_shell on {sys.platform} terminal")
+    
     logger.info(f"Current time: {datetime.datetime.now()}")
     logger.info("Initializing terminal")
     colorama.init()
-    logger.info("Initializing terminal complete")
     
     # set the charactars
     if not config["enable_ascii"]:
@@ -878,9 +886,11 @@ def init(write_banner=True):
         LIGHT_ARC_DOWN_AND_RIGHT        =   r"r-"
         LIGHT_ARC_UP_AND_RIGHT          =   r"+-"
         RIGHTWARDS_ARROW                =   r"->"
-
+    
     LINE = (os.get_terminal_size().columns - 2) * LIGHT_HORIZONTAL
-
+    
+    logger.info("Initializing unicode elements and color complete")
+    
     load_user_data()
     user_gbs = {"__name__": "__main__",
                 "__doc__": banner,
@@ -920,7 +930,8 @@ def init(write_banner=True):
                 return type(name, (), {"__call__": _c.__call__, "__repr__": _c.__repr__})()
 
         user_gbs["win_term"] = terminal_commands()
-
+        logger.info("Initializing terminal commands complete")
+    
     interact_f = False
     exec_flag = False
     exit_f = True
@@ -946,6 +957,8 @@ def init(write_banner=True):
     builtins.quit = user_gbs["Exit"]
     builtins.input = modified_input
     builtins.print = modified_print
+    
+    logger.info("Modifying builtin IO complete")
 
     def on_exit():
         return repr(user_gbs["Exit"])
@@ -959,7 +972,8 @@ def init(write_banner=True):
         sys.displayhook = sys.__displayhook__
         sys.excepthook = sys.__excepthook__
         sys.stderr.write(f"Internal Error: \n\n{modified_traceback(args[1], show_detail=True)}\n"
-                         f"If you suspect this is a My_Python_Shell issue, please report it at: {color_website(website)}\n\n"
+                         f"All data will be cleared.\n"
+                         f"If you suspect this is a My Python Shell issue, please report it at: {color_website(website)}\n\n"
                          f"{LINE}\n\n")
         init(write_banner=False)
         main()
@@ -988,7 +1002,7 @@ def init(write_banner=True):
           __/ |         __/ |                                 For beginners
          |___/         |___/             A simple shell that was easy to use
     """
-
+    logo = "\n".join([" " * 23 + i for i in logo.split("\n")])
     banner = f"\n{termcolor.colored(logo, *get_color(6))}\n\n{LINE}\n\n " \
              f"Features:\n" \
              f"    {LIGHT_DOWN_AND_RIGHT}{LIGHT_HORIZONTAL}  Runs the code in a sandbox (User namespace)\n" \
@@ -1000,7 +1014,7 @@ def init(write_banner=True):
              f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Coloring the traceback\n" \
              f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Change the theme\n" \
              f"    {LIGHT_UP_AND_RIGHT}{LIGHT_HORIZONTAL}  Can extend using the extend_commands decorator. (Type `extend_commands.help_commands()` to see all the commands.)\n\n{LINE}\n\n" \
-             f"\t\t\t\tHappy Using!\n\n\n"
+             f"\t\t\t\t\t\t\tHappy Using!\n\n\n"
 
     logger.info("Initializing shell successful.")
     

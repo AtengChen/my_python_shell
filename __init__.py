@@ -535,7 +535,7 @@ def modified_displayhook(obj):
             copy_cache = False
             can_color = True
             try:
-                eval(repr(obj))
+                eval(repr(obj), user_gbs, user_gbs)
             except SyntaxError:
                 can_color = False
             else:
@@ -675,13 +675,16 @@ class Modified_traceback:
             err_msg = f"{type(self.exc).__name__}: {self.exc}"
         self.result += f"{LINE}\nTraceback (most recent call last):\n{self.tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(err_msg, *get_color(7))}\n\n"
         if config["detail_err"] and (not self.show_detail):
-            search_string = f"Python {type(self.exc).__name__}"
-            if search_string in err_url_dict:
-                url = err_url_dict[search_string]
-            else:
-                url = googlesearch.lucky(f"Python {type(self.exc).__name__}")
-                err_url_dict[search_string] = url
-            self.result += f"\nFor more imformation about this error, please look at: \n\t{color_website(url)}\n\n{LINE}\n\n"
+            self.result += self.get_error_url()
+
+    def get_error_url(self):
+        search_string = f"Python {type(self.exc).__name__}"
+        if search_string in err_url_dict:
+            url = err_url_dict[search_string]
+        else:
+            url = googlesearch.lucky(f"Python {type(self.exc).__name__}")
+            err_url_dict[search_string] = url
+        return f"\nFor more imformation about this error, please look at: \n\t{color_website(url)}\n\n{LINE}\n\n"
 
     def __str__(self):
         return self.result
@@ -1063,9 +1066,9 @@ def main():
                     result = traceback.format_exc()
                 sys.stdout.write(result)
                 tb_list.append(result)
-            else:
+            finally:
+                save_data()
                 user_gbs["__dict__"] = user_gbs
-            save_data()
 
     except KeyboardInterrupt as e:
         sys.stderr.write(termcolor.colored(f"\nKeyboardInterrupt\n", *get_color(7)))

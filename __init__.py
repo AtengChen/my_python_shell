@@ -393,7 +393,7 @@ def load_user_data(storage_file=user_storage_file):
         err_url_dict = {}
         logger.error(f'Error opening {storage_file}: {e}')
         sys.stderr.write(f"Error ocurred when opening {storage_file}:\n")
-        result = modified_traceback(e)
+        result = str(Modified_traceback(e))
         sys.stdout.write(result)
         sys.stdout.write("\nPlease clear your data\n")
         sys.stdout.flush()
@@ -474,7 +474,7 @@ def on_exit():
     try:
         return repr(builtins.exit)
     except Exception as e:
-        sys.stderr.write("My Python Shell Internal Error: \n" + modified_traceback(e))
+        sys.stderr.write("My Python Shell Internal Error: \n" + Modified_traceback(e))
         exit_f = False
         exit(1)
 
@@ -565,32 +565,52 @@ def modified_displayhook(obj):
         sys.__displayhook__(obj)
 
 
-def modified_traceback(exc, show_detail=False):
+class Modified_traceback:
     """
     A modified version of python's traceback
     """
-    global code, In, user_gbs, config, website, err_url_dict
-    
-    traceback_list = traceback.extract_tb(exc.__traceback__)
-    result = ""
-    tb_main = ""
-    err_count = 0
-    is_syntaxerror = isinstance(exc, SyntaxError)
+    def __init__(self, exc, show_detail=False):
+        self.exc = exc
+        self.traceback_list = traceback.extract_tb(exc.__traceback__)
+        self.result = ""
+        self.tb_main = ""
+        self.err_count = 0
+        self.is_syntaxerror = isinstance(exc, SyntaxError)
+        self.show_detail = show_detail
 
-    for tb in traceback_list:
-        filename, line_num, func_name, error_code = tb
-        err_count += 1
+        for tb in self.traceback_list:
+            filename, line_num, func_name, error_code = tb
+            self.err_count += 1
+            if self.is_syntaxerror and (self.err_count == len(self.traceback_list)):
+                filename = f"<shell-{len(In)}>"
+                line_num = exc.lineno
+                func_name = "<module>"
+                error_code = In[-1]
+            hide_detail = ((filename in __file__) and (not config["debug_f"])) and (not self.show_detail)
+            if hide_detail:
+                continue
+            error_code, err_func_type, display_filename = self.get_stack_info(func_name, filename, error_code)
 
-        if is_syntaxerror and (err_count == len(traceback_list)):
-            filename = f"<shell-{len(In)}>"
-            line_num = exc.lineno
-            func_name = "<module>"
-            error_code = In[-1]
+            if (self.err_count > 4) and isinstance(exc, RecursionError):
+                tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  ...\n"
+                break
+            try:
+                display_code = self.display_code(filename, line_num)
+            except (IndexError, AttributeError):
+                display_code = self.on_error_display(hide_detail, line_num, error_code)
 
-        hide_detail = ((filename in __file__) and (not config["debug_f"])) and (not show_detail)
-        if hide_detail:
-            continue
+            self.tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  {display_filename}" \
+                           f":{termcolor.colored(line_num, *get_color(5))}, " \
+                           f"at {termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
+                           f"  {LIGHT_VERTICAL}\n{display_code}  {LIGHT_VERTICAL}\n"
+        if self.tb_main:
+            self.format_err()
+        else:
+            err_cause = f": {self.exc}" if str(self.exc) else ""
+            self.result += termcolor.colored(f"\nInternal Error: {type(self.exc).__name__}{err_cause}\n\n", *get_color(7)) + Modified_traceback(self.exc, show_detail=True) + "\n" + LINE + "\n"
 
+
+    def get_stack_info(self, func_name, filename, error_code):
         err_func_type = ""
         if func_name == "<module>":
             try:
@@ -598,7 +618,7 @@ def modified_traceback(exc, show_detail=False):
             except AttributeError:
                 pass
             else:
-                error_code = code
+                error_code = user_gbs["_"]
                 err_func_type = "module"
             display_filename = f"Shell {termcolor.colored(filename, *get_color(4))}"
         else:
@@ -617,60 +637,54 @@ def modified_traceback(exc, show_detail=False):
                 else:
                     display_filename = f"Shell {termcolor.colored(filename, *get_color(4))}"
 
-        if (err_count > 4) and isinstance(exc, RecursionError):
-            tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  ...\n"
-            break
-        
-        display_code = ""
-        try:
-            error_input = In[int(match_filename(filename)) - 1].split("\n")
-            error_code = error_input[line_num - 1]
+        return error_code, err_func_type, display_filename
 
-            for line_index in range(len(error_input)):
-                if not (line_index == line_num - 1):
-                    display_line_number = str(line_index + 1)
-                    display_line_number = display_line_number.rjust(len(str(len(error_input) + 1)) - len(display_line_number) + 1)
-                    display_code += f"  {LIGHT_VERTICAL}\t{termcolor.colored(display_line_number, *get_color(3))}{LIGHT_VERTICAL} {color_code(error_input[line_index])}\n"
-                else:
-                    display_line_number = RIGHTWARDS_ARROW + ' ' + str(line_num)
-                    display_line_number = display_line_number.rjust(len(str(len(error_input) + 1)) - len(display_line_number) + 5)
-                    
-                    if is_syntaxerror and (err_count == len(traceback_list)):
-                        c = error_code.replace(error_code.strip(), color_code(error_code, exc.offset))
-                        display_code += f"  {LIGHT_VERTICAL}  {termcolor.colored(display_line_number, *get_color(1))}{LIGHT_VERTICAL} {c}\n"
-                    else:
-                        display_code += f"  {LIGHT_VERTICAL}  {termcolor.colored(display_line_number, *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n"
-        except (IndexError, AttributeError):
-            if hide_detail:
-                display_code += f"  {LIGHT_VERTICAL}  {termcolor.colored('0', *get_color(1))}{LIGHT_VERTICAL} {termcolor.colored('(Cannot find original code)', *get_color(7))}\n"
+    def display_code(self, filename, line_num, display=""):
+        error_input = In[int(match_filename(filename)) - 1].split("\n")
+        error_code = error_input[line_num - 1]
+        
+        for line_index in range(len(error_input)):
+            if not (line_index == line_num - 1):
+                display_line_number = str(line_index + 1)
+                display_line_number = display_line_number.rjust(len(str(len(error_input) + 1)) - len(display_line_number) + 1)
+                display += f"  {LIGHT_VERTICAL}\t{termcolor.colored(display_line_number, *get_color(3))}{LIGHT_VERTICAL} {color_code(error_input[line_index])}\n"
             else:
                 display_line_number = RIGHTWARDS_ARROW + ' ' + str(line_num)
-                display_code += f"  {LIGHT_VERTICAL}  {termcolor.colored(display_line_number, *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n"
-        
-        tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  {display_filename}" \
-                       f":{termcolor.colored(line_num, *get_color(5))}, " \
-                       f"at {termcolor.colored(err_func_type, *get_color(9))} {termcolor.colored(func_name, *get_color(6))}: \n" \
-                       f"  {LIGHT_VERTICAL}\n{display_code}  {LIGHT_VERTICAL}\n"
+                display_line_number = display_line_number.rjust(len(str(len(error_input) + 1)) - len(display_line_number) + 5)
+                
+                if self.is_syntaxerror and (self.err_count == len(self.traceback_list)):
+                    c = error_code.replace(error_code.strip(), color_code(error_code, self.exc.offset))
+                    display += f"  {LIGHT_VERTICAL}  {termcolor.colored(display_line_number, *get_color(1))}{LIGHT_VERTICAL} {c}\n"
+                else:
+                    display += f"  {LIGHT_VERTICAL}  {termcolor.colored(display_line_number, *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n"
 
-    if tb_main:
-        if is_syntaxerror:
-            err_msg = f"{type(exc).__name__}: Invalid Syntax"
+        return display
+
+    def on_error_display(self, hide_detail, line_num, error_code, display=""):
+        if hide_detail:
+            display += f"  {LIGHT_VERTICAL}  {termcolor.colored('0', *get_color(1))}{LIGHT_VERTICAL} {termcolor.colored('(Cannot find original code)', *get_color(7))}\n"
         else:
-            err_msg = f"{type(exc).__name__}: {exc}"
-        result += f"{LINE}\nTraceback (most recent call last):\n{tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(err_msg, *get_color(7))}\n\n"
-        if config["detail_err"] and (not show_detail):
-            search_string = f"Python {type(exc).__name__}"
+            display_line_number = RIGHTWARDS_ARROW + ' ' + str(line_num)
+            display += f"  {LIGHT_VERTICAL}  {termcolor.colored(display_line_number, *get_color(1))}{LIGHT_VERTICAL} {color_code(error_code)}\n"
+        return display
+
+    def format_err(self):
+        if self.is_syntaxerror:
+            err_msg = f"{type(self.exc).__name__}: Invalid Syntax"
+        else:
+            err_msg = f"{type(self.exc).__name__}: {self.exc}"
+        self.result += f"{LINE}\nTraceback (most recent call last):\n{self.tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(err_msg, *get_color(7))}\n\n"
+        if config["detail_err"] and (not self.show_detail):
+            search_string = f"Python {type(self.exc).__name__}"
             if search_string in err_url_dict:
                 url = err_url_dict[search_string]
             else:
-                url = googlesearch.lucky(f"Python {type(exc).__name__}")
+                url = googlesearch.lucky(f"Python {type(self.exc).__name__}")
                 err_url_dict[search_string] = url
+            self.result += f"\nFor more imformation about this error, please look at: \n\t{color_website(url)}\n\n{LINE}\n\n"
 
-            result += f"\nFor more imformation about this error, please look at: \n\t{color_website(url)}\n\n{LINE}\n\n"
-    else:
-        err_cause = f": {exc}" if str(exc) else ""
-        result += termcolor.colored(f"\nInternal Error: {type(exc).__name__}{err_cause}\n\n", *get_color(7)) + modified_traceback(exc, show_detail=True) + "\n" + LINE + "\n"
-    return result
+    def __str__(self):
+        return self.result
 
 
 def parse_code(inp_code):
@@ -971,7 +985,7 @@ def init(write_banner=True):
         sys.stderr = sys.__stderr__
         sys.displayhook = sys.__displayhook__
         sys.excepthook = sys.__excepthook__
-        sys.stderr.write(f"Internal Error: \n\n{modified_traceback(args[1], show_detail=True)}\n"
+        sys.stderr.write(f"Internal Error: \n\n{Modified_traceback(args[1], show_detail=True)}\n"
                          f"All data will be cleared.\n"
                          f"If you suspect this is a My Python Shell issue, please report it at: {color_website(website)}\n\n"
                          f"{LINE}\n\n")
@@ -1034,7 +1048,6 @@ def main():
             try:
                 code = input_code()
                 parse_code(code)
-                save_data()
             except SystemExit:
                 if exit_f:
                     warnings.warn('To exit, please use EOF, exit or quit.')
@@ -1045,13 +1058,14 @@ def main():
             except Exception as e:
                 Out[len(In)] = (code, termcolor.colored(e, *get_color(7)))
                 if config["pretty_traceback"] or config["pretty_traceback"] == None:
-                    result = modified_traceback(e)
+                    result = str(Modified_traceback(e))
                 elif config["pretty_traceback"] == False:
                     result = traceback.format_exc()
                 sys.stdout.write(result)
                 tb_list.append(result)
             else:
                 user_gbs["__dict__"] = user_gbs
+            save_data()
 
     except KeyboardInterrupt as e:
         sys.stderr.write(termcolor.colored(f"\nKeyboardInterrupt\n", *get_color(7)))

@@ -1,9 +1,6 @@
 import sys
 
-WINDOWS = 0
-
-if sys.platform == "win32":
-    WINDOWS = 1
+WINDOWS = int(sys.platform == "win32")
 
 cmd_list = ['ASSOC',
             'ATTRIB',

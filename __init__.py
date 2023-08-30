@@ -10,7 +10,6 @@ import builtins             # modify its functions and get the builtin-function 
 import collections          # store the config data
 import colorama             # initalize the terminal, needs to install it from pip
 import copy                 # copying objects
-import ctypes               # Windows console api
 import datetime             # only for an extension command
 import inspect              # get the module name from a path
 import json                 # saving for history
@@ -21,14 +20,13 @@ import pprint               # pretty display of the displayhook
 import pygments             # replace the keywords and builtin-functions with the different colors, needs to install it from pip
 import pygments.formatters  #
 import pygments.lexers      #
-import pyperclip            # copying the result
 import re                   # matching file names
 import sys                  # 
 import termcolor            # color of the terminal, needs to install it from pip
 import traceback            # capture the error info and color it
 import types                # get NoneType
 import unicodedata          # print unicode charactars
-import warnings              # 
+import warnings             # 
 import webbrowser           # only for an extension command
 
 from utils.command import cmd_list, WINDOWS
@@ -38,7 +36,7 @@ from utils.inspect_obj import get_info as _get_info
 # set the default vars
 
 exec_flag = None
-user_gbs = {}
+user_gbs = {"_": ""}
 frame_name = ""
 In = []
 Out = {}
@@ -85,21 +83,10 @@ LIGHT_ARC_DOWN_AND_RIGHT        =   "  "
 LIGHT_ARC_UP_AND_RIGHT          =   "  "
 RIGHTWARDS_ARROW                =   "  "
 
-try:
-    os.mkdir(".shell")
-except FileExistsError:
-    pass
 
-user_storage_file = os.path.dirname(__file__) + "\\.shell\\user_storage.json"
-log_file = os.path.dirname(__file__) + "\\.shell\\init_log.LOG"
-error_storage_file = os.path.dirname(__file__) + "\\.shell\\error_urls.json"
-
-logger = logging.getLogger(__name__)
-file_handler = logging.FileHandler(log_file)
-formatter = logging.Formatter('%(relativeCreated)d : %(levelname)s : %(message)s')
-file_handler.setFormatter(formatter)
-
-logger.addHandler(file_handler)
+user_storage_file = ""
+log_file = ""
+error_storage_file = ""
 
 
 class modules:
@@ -141,7 +128,7 @@ class Extensions_Commands:
 
             _cls = type(func.__name__, (), {"__repr__": _c.__repr__, "__call__": _c.__call__, "__init__": _c.__init__})
             user_gbs[func.__name__] = _cls()
-            setattr(user_gbs["extend_commands"], func.__name__, _cls())
+            setattr(user_gbs["extend_commands"], func.__name__, func)
             if not interact_f:
                 logger.info(f"Setting extension command {func.__name__} successful")
             
@@ -267,7 +254,7 @@ def set_commands():
         webbrowser.open(args[0])
         return args[0]
     
-    if not WINDOWS:
+    if (not WINDOWS) or config["debug_f"]:
         @Extensions_Commands
         def term(*args, **kwargs): # usage same as the open_browser func
             """Execute a terminal command."""
@@ -276,14 +263,14 @@ def set_commands():
                 res = os.popen(cmd).read()
                 if res:
                     for i in res.split("\n"):
-                        sys.stdout.write(f"       {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
+                        sys.stdout.write(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  {i}\n")
                 return cmd
 
             res = os.popen(args[0]).read()
 
             if res:
                 for i in res.split("\n"):
-                    sys.stdout.write(f"      {LIGHT_VERTICAL_AND_RIGHT}  {i}\n")
+                    sys.stdout.write(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  {i}\n")
 
             return args[0]
 
@@ -306,12 +293,6 @@ def set_commands():
                 In = []
                 Out = {}
             return args[0]
-
-    @Extensions_Commands
-    def load_data(*args, **kwargs): # usage same as the clear_data func
-        """Load a history file."""
-        if repr(clear_history) == "clear_data('Y')":
-            load_user_data(modified_input(f"Please enter your storage file's path: "))
 
     @Extensions_Commands
     def get_time(*args, **kwargs): # usage same as the load_data func
@@ -367,16 +348,14 @@ def set_commands():
         sys.stdout.write(f"\n{LINE}\n")
 
     
-def load_user_data(storage_file=user_storage_file):
+def load_user_data():
     global In, Out, theme, user_data, logger, user_storage_file, user_gbs, tb_list, err_url_dict, error_storage_file
-
-    logger.info(f"Loading user storage `{storage_file}`")
+    logger.info(f"Loading user storage `{user_storage_file}`")
     try:
-        with open(storage_file, "r") as user_storage, open(error_storage_file, "r") as err_storage:
+        with open(user_storage_file, "r") as user_storage, open(error_storage_file, "r") as err_storage:
             user_data = json.load(user_storage)
             In, Out, theme, tb_list = user_data
             err_url_dict = json.load(err_storage)
-
         logger.info("Loading user storage successful")
     except FileNotFoundError:
         In = []
@@ -391,8 +370,8 @@ def load_user_data(storage_file=user_storage_file):
         theme = "black"
         tb_list = []
         err_url_dict = {}
-        logger.error(f'Error opening {storage_file}: {e}')
-        sys.stderr.write(f"Error ocurred when opening {storage_file}:\n")
+        logger.error(f'Error opening {user_storage_file}: {e}')
+        sys.stderr.write(f"Error ocurred when opening {user_storage_file}:\n")
         result = str(Modified_traceback(e))
         sys.stdout.write(result)
         sys.stdout.write("\nPlease clear your data\n")
@@ -414,10 +393,11 @@ def load_user_modules():
 
 def save_data():
     global user_data, In, Out, theme, user_storage_file, tb_list, error_storage_file, err_url_dict
-    user_data = (In, Out, theme, tb_list)
-    with open(user_storage_file, "w") as f, open(error_storage_file, "w") as f2:
-        json.dump(user_data, f)
-        json.dump(err_url_dict, f2)
+    if not config["nohistory"]:
+        user_data = (In, Out, theme, tb_list)
+        with open(user_storage_file, "w") as f, open(error_storage_file, "w") as f2:
+            json.dump(user_data, f)
+            json.dump(err_url_dict, f2)
 
 
 def get_color(idx):
@@ -522,20 +502,29 @@ def ask_yes_no(question, options=["y", "n"]):
             return False
     else:
         return None
-        
+
+
+HAS_PYPERCLIP = True
+
+try:
+    import pyperclip
+except ImportError:
+    HAS_PYPERCLIP = False
+
 
 def modified_displayhook(obj):
     """
     The modified version of sys.displayhook
     """
-    global Out, In, user_gbs, config
+    global Out, In, user_gbs, config, HAS_PYPERCLIP
 
     try:
         if obj is not None:
             copy_cache = False
             can_color = True
             try:
-                eval(repr(obj), user_gbs, user_gbs)
+                if type(obj).__name__ not in dir(user_gbs["extend_commands"]):
+                    eval(repr(obj), user_gbs, user_gbs)
             except SyntaxError:
                 can_color = False
             else:
@@ -557,7 +546,7 @@ def modified_displayhook(obj):
                 sys.stdout.write(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": {color_code(repr_obj) if can_color else repr_obj}\n")
             
             sys.stdout.write(f"\x1b]0;My python shell - {repr_obj}\x07\r\n")
-            if config["copy_result"] and can_color:
+            if config["copy_result"] and HAS_PYPERCLIP:
                 pyperclip.copy(repr_obj)
             sys.stdout.write(LINE + "\n")
 
@@ -847,6 +836,9 @@ def init(write_banner=True):
            logo, \
            config, \
            indent, \
+           user_storage_file, \
+           log_file, \
+           error_storage_file, \
            \
            LIGHT_VERTICAL_AND_RIGHT, \
            LIGHT_UP_AND_RIGHT, \
@@ -856,8 +848,27 @@ def init(write_banner=True):
            LIGHT_ARC_DOWN_AND_RIGHT, \
            LIGHT_ARC_UP_AND_RIGHT, \
            RIGHTWARDS_ARROW
-
     
+    if config["user_profile"] is not None:
+        user_profile = config["user_profile"]
+    else:
+        try:
+            os.mkdir("\\.shell")
+        except FileExistsError:
+            pass
+        user_profile = os.path.dirname(__file__) + "\\.shell"
+    
+    user_storage_file = f"{user_profile}\\user_storage.json"
+    log_file = f"{user_profile}\\init_log.LOG"
+    error_storage_file = f"{user_profile}\\error_urls.json"
+    
+    logger = logging.getLogger(__name__)
+    file_handler = logging.FileHandler(log_file)
+    formatter = logging.Formatter('%(relativeCreated)d : %(levelname)s : %(message)s')
+    file_handler.setFormatter(formatter)
+    
+    logger.addHandler(file_handler)
+
     if config["debug_f"]:
         logger.setLevel(logging.DEBUG)
     else:
@@ -865,6 +876,7 @@ def init(write_banner=True):
 
     run_from_console = False
     if sys.platform == "win32":
+        import ctypes
         kernel32 = ctypes.windll.kernel32
         console = kernel32.GetConsoleWindow()
         if console or os.getenv('PROMPT'):
@@ -1085,3 +1097,4 @@ else:
     
     if os.system("python " + os.path.dirname(__file__)):
         raise Exception("`__main__.py` not found")
+        

@@ -39,12 +39,12 @@ pip install -r requirements.txt
 **Window**
 
 ```
-my_python_shell.bat [-h] [-d] [--noprettytb] [-a] [--nocopyresult] [--nocolor] [--nodetailerr] [--nohistory] [-u USER_PROFILE]
+my_python_shell.bat [-h] [-d] [--noprettytb] [-a] [--nocopyresult] [--nocolor] [--nodetailerr] [--nohistory] [-u USER_PROFILE] [--nosuggest]
 ```
 
 **Linux**
 ```
-python3 . [-h] [-d] [--noprettytb] [-a] [--nocopyresult] [--nocolor] [--nodetailerr] [--nohistory] [-u USER_PROFILE]
+python3 . [-h] [-d] [--noprettytb] [-a] [--nocopyresult] [--nocolor] [--nodetailerr] [--nohistory] [-u USER_PROFILE] [--nosuggest]
 ```
 
 Usage of the options:
@@ -59,6 +59,7 @@ Usage of the options:
   --nohistory           Don't save history
   -u USER_PROFILE, --user_profile USER_PROFILE
                         The path to user data. Default path `./.shell`.
+  --nosuggest           Don't suggest complete code when an error happens.
 ```
 #### After starting the shell
 1. You should now see the My Python Shell welcome message and the interactive prompt.

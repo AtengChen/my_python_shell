@@ -12,8 +12,10 @@ import colorama             # initalize the terminal, needs to install it from p
 import copy                 # copying objects
 import datetime             # only for an extension command
 import inspect              # get the module name from a path
+import jedi                 # auto-completion
 import json                 # saving for history
 import logging              # log the init process
+import math                 # pretty output calculations
 import os                   # use cmd for controling background colors
 import os.path              # path control
 import pprint               # pretty display of the displayhook
@@ -662,9 +664,16 @@ class Modified_traceback:
             err_msg = f"{type(self.exc).__name__}: Invalid Syntax"
         else:
             err_msg = f"{type(self.exc).__name__}: {self.exc}"
-        self.result += f"{LINE}\nTraceback (most recent call last):\n{self.tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(err_msg, *get_color(7))}\n\n"
+        self.result += f"{LINE}" \
+                       f"\nTraceback (most recent call last):\n"\
+                       f"{self.tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(err_msg, *get_color(7))}\n\n"
         if config["detail_err"] and (not self.show_detail):
             self.result += self.get_error_url()
+        
+        if (not self.is_syntaxerror) and (not config["no_suggest_code"]):
+            self.result += self.complete() + "\n"
+
+        self.result += f"{LINE}\n\n"
 
     def get_error_url(self):
         search_string = f"Python {type(self.exc).__name__}"
@@ -673,7 +682,33 @@ class Modified_traceback:
         else:
             url = googlesearch.lucky(f"Python {type(self.exc).__name__}")
             err_url_dict[search_string] = url
-        return f"\nFor more imformation about this error, please look at: \n\t{color_website(url)}\n\n{LINE}\n\n"
+        return f"\nFor more imformation about this error, please look at: \n\t{color_website(url)}\n\n"
+
+    def complete(self):
+        string = In[-1]
+        script = jedi.Script(string)
+        line = len(string.split("\n"))
+        column = len(string.split("\n")[-1])
+        completions = script.complete(line, column)
+        if len(completions) == 0:
+            sug = "We couldn't find any suggestions for you :(\n"
+            return sug
+        sug = "Perhaps you want to type the following statements? \n"
+        length = math.floor(math.sqrt(len(completions)))
+        height, width = divmod(len(completions), length)
+        n = 0
+        for row in range(height):    
+            for col in range(length):
+                comp = color_code(completions[n].name)
+                sug += f"\t\t{comp}"
+                n += 1
+            sug += "\n"
+
+        for comp in range(width):
+            sug += f"\t\t{color_code(completions[n].name)}"
+            n += 1
+
+        return sug
 
     def __str__(self):
         return self.result
@@ -1097,4 +1132,3 @@ else:
     
     if os.system("python " + os.path.dirname(__file__)):
         raise Exception("`__main__.py` not found")
-        

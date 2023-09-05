@@ -21,6 +21,7 @@ if __name__ == "__main__":
     parser.add_argument("--nodetailerr", help="No detailed error", action='store_true')
     parser.add_argument("--nohistory", help="Don't save history", action='store_true')
     parser.add_argument("-u", "--user_profile", help="The path to user data. Default path `./.shell`.")
+    parser.add_argument("--nosuggest", help="Don't suggest complete code when an error happens.", action='store_true')
     
 
     args = parser.parse_args()
@@ -33,6 +34,7 @@ if __name__ == "__main__":
     __init__.config["detail_err"] = not args.nodetailerr
     __init__.config["nohistory"] = args.nohistory
     __init__.config["user_profile"] = args.user_profile
+    __init__.config["no_suggest_code"] = args.nosuggest
     
     del argparse, __init__, args, parser
 

@@ -5,7 +5,7 @@ import os.path
 __author__ = "Aten Chen"
 __email__ = ("ateng0721@hotmail.com", "9944560@schoolsnet.act.edu.au")
 __doc__ = open(os.path.dirname(__file__) + "\\README.md", "r", encoding="UTF-8").read()
-__version__ = "0.8"
+__version__ = "0.9"
 
 if __name__ == "__main__":
     import argparse, sys, __init__

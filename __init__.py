@@ -12,10 +12,9 @@ import colorama             # initalize the terminal, needs to install it from p
 import copy                 # copying objects
 import datetime             # only for an extension command
 import inspect              # get the module name from a path
-import jedi                 # auto-completion
+import jedi.api             # auto-completion
 import json                 # saving for history
 import logging              # log the init process
-import math                 # pretty output calculations
 import os                   # use cmd for controling background colors
 import os.path              # path control
 import pprint               # pretty display of the displayhook
@@ -32,7 +31,9 @@ import warnings             #
 import webbrowser           # only for an extension command
 
 from utils.command import cmd_list, WINDOWS
-from utils.inspect_obj import get_info as _get_info
+from utils.inspect_obj import get_info as _get_info, get_name
+from terminal_data import get_char_data, colors as _colors
+from pretty import pretty
 
 
 # set the default vars
@@ -52,7 +53,7 @@ exit_f = None
 err_pattern = r""
 interact_f = None
 indent = 0
-colors = {"black": [None, None, None, None, None, None, None, None, None, None]}
+colors = {"black": [None, None, None, None, None, None, None, None, None, None, None]}
 theme = "black"
 banner = ""
 logo = ""
@@ -344,10 +345,19 @@ def set_commands():
 
     @Extensions_Commands
     def license(*args, **kwargs):
-        sys.stdout.write(f"\n{LINE}\n")
-        if os.system("more LICENSE"):
-            sys.stderr.write("\nError reading `LICENSE` file, please check your file have downloaded correctly.")
-        sys.stdout.write(f"\n{LINE}\n")
+        sys.stdout.write(f"\n{LINE}\n\n")
+
+        if WINDOWS:
+            if os.system("more LICENSE"):
+                sys.stderr.write("\nError reading `LICENSE` file, please check your file have downloaded correctly.")
+        else:
+            try:
+                with open("LICENSE", "r") as f:
+                    printer(f.read())
+            except FileNotFoundError:
+                sys.stderr.write("\nError reading `LICENSE` file, please check your file have downloaded correctly.")
+
+        sys.stdout.write(f"\n\n{LINE}\n")
 
     
 def load_user_data():
@@ -408,6 +418,28 @@ def get_color(idx):
     """
     global colors, theme
     return (colors[theme][idx], "on_" + theme)
+
+
+def printer(txt, quit_char="q", cursor="|", prompt=""):
+    if not prompt:
+        prompt = f"(Press `{quit_char}` to quit, Press any key to continue)"
+    for line in txt.split("\n"):
+        for word in line.split(" "):
+            sys.stdout.write("\b" * (len(prompt) + 1) + word + " " + termcolor.colored(cursor, attrs=["blink", "bold"]) + prompt)
+            sys.stdout.flush()
+            if getch() == quit_char.encode("ascii"):
+                sys.stdout.write("\n")
+                return
+        sys.stdout.write("\r" + (len(line + prompt) + 2) * " " + "\r")
+        sys.stdout.flush()
+    
+    nobreak = True
+    while nobreak:
+        if getch() != quit_char.encode("ascii"):
+            sys.stdout.write(termcolor.colored("\r(END)", attrs=["reverse"]))
+            sys.stdout.flush()
+        else:
+            nobreak = False
 
 
 def modified_input(text=""):
@@ -539,14 +571,15 @@ def modified_displayhook(obj):
 
             if not copy_cache:
                 repr_obj = pprint.pformat(obj, indent=4) if hasattr(obj, "__iter__") else repr(obj)
-                
+            
             Out[len(In)] = (In[-1], repr_obj)
             user_gbs["_"] = obj
             if "\n" in repr_obj:
-                sys.stdout.write(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": \n\n{color_code(repr_obj, lines=True) if can_color else repr_obj}\n")
+                output_obj = "\n\n" + color_code(repr_obj, lines=True) if can_color else repr_obj
             else:
-                sys.stdout.write(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": {color_code(repr_obj) if can_color else repr_obj}\n")
+                output_obj = color_code(repr_obj) if can_color else repr_obj
             
+            sys.stdout.write(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": {output_obj}\n")
             sys.stdout.write(f"\x1b]0;My python shell - {repr_obj}\x07\r\n")
             if config["copy_result"] and HAS_PYPERCLIP:
                 pyperclip.copy(repr_obj)
@@ -634,7 +667,7 @@ class Modified_traceback:
         error_input = In[int(match_filename(filename)) - 1].split("\n")
         error_code = error_input[line_num - 1]
         
-        for line_index in range(len(error_input)):
+        for line_index in range(len(error_input))[(line_num - len(error_input) - 3): (line_num + 2)]:
             if not (line_index == line_num - 1):
                 display_line_number = str(line_index + 1)
                 display_line_number = display_line_number.rjust(len(str(len(error_input) + 1)) - len(display_line_number) + 1)
@@ -686,27 +719,37 @@ class Modified_traceback:
 
     def complete(self):
         string = In[-1]
-        script = jedi.Script(string)
-        line = len(string.split("\n"))
-        column = len(string.split("\n")[-1])
-        completions = script.complete(line, column)
+        script = jedi.api.Interpreter(string, [user_gbs])
+        completions = script.complete()
         if len(completions) == 0:
             sug = "We couldn't find any suggestions for you :(\n"
             return sug
-        sug = "Perhaps you want to type the following statements? \n"
-        length = math.floor(math.sqrt(len(completions)))
-        height, width = divmod(len(completions), length)
-        n = 0
-        for row in range(height):    
-            for col in range(length):
-                comp = color_code(completions[n].name)
-                sug += f"\t\t{comp}"
-                n += 1
-            sug += "\n"
 
-        for comp in range(width):
-            sug += f"\t\t{color_code(completions[n].name)}"
-            n += 1
+        sug = "Perhaps you want to type the following statements? \n"
+        for comp in completions:
+            try:
+                f = False
+                for item in user_gbs:
+                    if inspect.ismodule(user_gbs[item]):
+                        try:
+                            comp = get_name(getattr(user_gbs[item], comp.name))
+                        except AttributeError:
+                            continue
+                        else:
+                            f = True
+                            break
+                if not f:
+                    if comp.name in user_gbs:
+                        comp = get_name(user_gbs[comp.name])
+                    else:
+                        comp = comp.name
+            except ValueError:
+                comp = comp.name
+
+            if len(comp) > 50:
+                comp = comp[:47] + "..."
+
+            sug += f"\t{color_code(comp)}\n"
 
         return sug
 
@@ -798,7 +841,7 @@ def input_code(pmt=None):
 
 def color_code(code_string, offset=None, lines=False):
     """
-    colors the code.
+    Colors the code.
     """
     global py_lexer, py_formatter
     
@@ -814,7 +857,9 @@ def color_code(code_string, offset=None, lines=False):
         else:
             result = pygments.highlight(code_string, py_lexer, py_formatter).strip()
     
-    result = result.replace("\t", f"\b{termcolor.colored(LIGHT_VERTICAL, attrs=['dark'])}\t")
+    tab_line = f"\b{termcolor.colored(LIGHT_VERTICAL, attrs=['dark'])}\t"
+
+    result = result.replace("\t", tab_line).replace(" " * 4, tab_line)
 
     return result
 
@@ -842,7 +887,7 @@ def get_info(obj):
             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  {k}:\t\t{v}\n")
 
             
-def init(write_banner=True):
+def init(write_banner=True, run_from_shell=True):
     """
     Initalize the whole shell:
         Set up the environment vars
@@ -932,25 +977,15 @@ def init(write_banner=True):
     colorama.init()
     
     # set the charactars
-    if not config["enable_ascii"]:
-        LIGHT_VERTICAL_AND_RIGHT        =   unicodedata.lookup("BOX DRAWINGS LIGHT VERTICAL AND RIGHT") # U+251C
-        LIGHT_UP_AND_RIGHT              =   unicodedata.lookup("BOX DRAWINGS LIGHT UP AND RIGHT")       # U+2514
-        LIGHT_DOWN_AND_RIGHT            =   unicodedata.lookup("BOX DRAWINGS LIGHT DOWN AND RIGHT")     # U+250C
-        LIGHT_HORIZONTAL                =   unicodedata.lookup("BOX DRAWINGS LIGHT HORIZONTAL")         # U+2500
-        LIGHT_VERTICAL                  =   unicodedata.lookup("BOX DRAWINGS LIGHT VERTICAL")           # U+2502
-        LIGHT_ARC_DOWN_AND_RIGHT        =   unicodedata.lookup("BOX DRAWINGS LIGHT ARC DOWN AND RIGHT") # U+256D
-        LIGHT_ARC_UP_AND_RIGHT          =   unicodedata.lookup("BOX DRAWINGS LIGHT ARC UP AND RIGHT")   # U+2570
-        RIGHTWARDS_ARROW                =   unicodedata.lookup("RIGHTWARDS ARROW")                      # U+2192
-    else:
-        LIGHT_VERTICAL_AND_RIGHT        =   r"|-"
-        LIGHT_UP_AND_RIGHT              =   r"\-"
-        LIGHT_DOWN_AND_RIGHT            =   r"/-"
-        LIGHT_HORIZONTAL                =   r"--"
-        LIGHT_VERTICAL                  =   r"| "
-        LIGHT_ARC_DOWN_AND_RIGHT        =   r"r-"
-        LIGHT_ARC_UP_AND_RIGHT          =   r"+-"
-        RIGHTWARDS_ARROW                =   r"->"
-    
+    LIGHT_VERTICAL_AND_RIGHT,\
+    LIGHT_UP_AND_RIGHT      ,\
+    LIGHT_DOWN_AND_RIGHT    ,\
+    LIGHT_HORIZONTAL        ,\
+    LIGHT_VERTICAL          ,\
+    LIGHT_ARC_DOWN_AND_RIGHT,\
+    LIGHT_ARC_UP_AND_RIGHT  ,\
+    RIGHTWARDS_ARROW = get_char_data(config["enable_ascii"])
+
     LINE = (os.get_terminal_size().columns - 2) * LIGHT_HORIZONTAL
     
     logger.info("Initializing unicode elements and color complete")
@@ -962,49 +997,57 @@ def init(write_banner=True):
                 "__spec__": None,
                 "__annotations__": {},
                 "__loader__": None,
-                "In": In,
-                "Out": Out,
-                "__dict__": user_gbs,
-                "_": In[-1] if In else "",
-                "extend_commands": Extensions_Commands,
-                "modules": modules,
-                "quick_help": get_info,
-                "get_info": get_info, 
-                "ask_yes_no": ask_yes_no,
-                "config": config}
+                "__dict__": user_gbs}
+   
+    if run_from_shell:
+        user_gbs.update({
+            "In": In,
+            "Out": Out,
+            "_": In[-1] if In else "",
+            "extend_commands": Extensions_Commands,
+            "modules": modules,
+            "quick_help": get_info,
+            "get_info": get_info, 
+            "ask_yes_no": ask_yes_no,
+            "config": config
+            })
 
-    load_user_modules()
-    user_gbs["modules"] = user_gbs["modules"]()
-
-    if WINDOWS:
-        class terminal_commands:
-            __doc__ = os.popen("help").read()
-                        
-            def __getattr__(self, name):
-                if name.upper() not in cmd_list:
-                    return
-                
-                class _c:
-                    def __call__(self, *options, cmd=name):
-                        modified_print(os.popen(cmd + " " + " ".join(options)).read())
+        load_user_modules()
+        user_gbs["modules"] = user_gbs["modules"]()
+        if WINDOWS:
+            class terminal_commands:
+                __doc__ = os.popen("help").read()
+                            
+                def __getattr__(self, name):
+                    if name.upper() not in cmd_list:
+                        return
                     
-                    def __repr__(self, cmd=name):
-                        return os.popen(f"help {cmd}").read()
-                
-                return type(name, (), {"__call__": _c.__call__, "__repr__": _c.__repr__})()
+                    class _c:
+                        def __call__(self, *options, cmd=name):
+                            modified_print(os.popen(cmd + " " + " ".join(options)).read())
+                        
+                        def __repr__(self, cmd=name):
+                            return os.popen(f"help {cmd}").read()
+                    
+                    return type(name, (), {"__call__": _c.__call__, "__repr__": _c.__repr__})()
 
-        user_gbs["win_term"] = terminal_commands()
-        logger.info("Initializing terminal commands complete")
+            user_gbs["win_term"] = terminal_commands()
+
+        set_commands()
+
+    logger.info("Initializing terminal commands complete")
     
     interact_f = False
     exec_flag = False
     exit_f = True
-    frame_name = f"<shell-{len(In)}>"
+    if run_from_shell:
+        frame_name = f"<shell-{len(In)}>"
+    else:
+        frame_name = "__main__"
 
     if not config["nocolor"]:
         indent = 15
-        colors = {"black": ["light_red", "light_yellow", "light_magenta", "light_green", "magenta", "yellow", "light_cyan", "red", "white", "blue", "light_blue"],
-              "white": ["light_green", "light_blue", "light_green", "light_magenta", "green", "blue", "red", "green", "black", "yellow", "light_yellow"]}
+        colors = copy.copy(_colors)
     else:
         indent = 10
     sys.stdout.write = modified_write
@@ -1012,51 +1055,47 @@ def init(write_banner=True):
     logger.info("Setting theme successful")
 
     sys.stdout.write(f"\x1b]0;My python shell\x07\r")
-
-    _exit = sys.exit
-
-    set_commands()
-
-    builtins.exit = user_gbs["Exit"]
-    builtins.quit = user_gbs["Exit"]
-    builtins.input = modified_input
-    builtins.print = modified_print
     
-    logger.info("Modifying builtin IO complete")
+    if run_from_shell:
+        _exit = sys.exit
+        builtins.exit = user_gbs["Exit"]
+        builtins.quit = user_gbs["Exit"]
+        builtins.input = modified_input
+        builtins.print = modified_print
+        logger.info("Modifying builtin IO complete")
+        def on_exit():
+            return repr(user_gbs["Exit"])
+        
+        def _on_error(*args):
+            global exit_f
+            os.system("PAUSE")
+            sys.stdout = sys.__stdout__
+            sys.stdin = sys.__stdin__
+            sys.stderr = sys.__stderr__
+            sys.displayhook = sys.__displayhook__
+            sys.excepthook = sys.__excepthook__
+            sys.stderr.write(f"Internal Error: \n\n{Modified_traceback(args[1], show_detail=True)}\n"
+                             f"All data will be cleared.\n"
+                             f"If you suspect this is a My Python Shell issue, please report it at: {color_website(website)}\n\n"
+                             f"{LINE}\n\n")
+            init(write_banner=False)
+            main()
+        
+        atexit.register(on_exit)
 
-    def on_exit():
-        return repr(user_gbs["Exit"])
-    
-    def _on_error(*args):
-        global exit_f
-        os.system("PAUSE")
-        sys.stdout = sys.__stdout__
-        sys.stdin = sys.__stdin__
-        sys.stderr = sys.__stderr__
-        sys.displayhook = sys.__displayhook__
-        sys.excepthook = sys.__excepthook__
-        sys.stderr.write(f"Internal Error: \n\n{Modified_traceback(args[1], show_detail=True)}\n"
-                         f"All data will be cleared.\n"
-                         f"If you suspect this is a My Python Shell issue, please report it at: {color_website(website)}\n\n"
-                         f"{LINE}\n\n")
-        init(write_banner=False)
-        main()
-    
-    atexit.register(on_exit)
-    logger.info("Registering exit-func successful")
+        logger.info("Registering exit-func successful")
 
-    sys.displayhook = modified_displayhook
+        sys.displayhook = modified_displayhook
+        on_error = _on_error
 
-    on_error = _on_error
+        sys.excepthook = copy.copy(on_error)
 
-    sys.excepthook = copy.copy(on_error)
-
-    prompt = termcolor.colored(f"\nIn [0]", *get_color(3))
-    sys.ps1 = f"{prompt}{LIGHT_ARC_DOWN_AND_RIGHT}{RIGHTWARDS_ARROW} "
-    sys.ps2 = f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}   "
-    logger.info("Setting prompt successful")
-    
-    logo = r"""
+        prompt = termcolor.colored(f"\nIn [0]", *get_color(3))
+        sys.ps1 = f"{prompt}{LIGHT_ARC_DOWN_AND_RIGHT}{RIGHTWARDS_ARROW} "
+        sys.ps2 = f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}   "
+        logger.info("Setting prompt successful")
+        
+        logo = r"""
   __  __         _____       _   _                    _____ _          _ _
  |  \/  |       |  __ \     | | | |                  / ____| |        | | |
  | \  / |_   _  | |__) |   _| |_| |__   ___  _ __   | (___ | |__   ___| | |
@@ -1066,24 +1105,24 @@ def init(write_banner=True):
           __/ |         __/ |                                 For beginners
          |___/         |___/             A simple shell that was easy to use
     """
-    logo = "\n".join([" " * 23 + i for i in logo.split("\n")])
-    banner = f"\n{termcolor.colored(logo, *get_color(6))}\n\n{LINE}\n\n " \
-             f"Features:\n" \
-             f"    {LIGHT_DOWN_AND_RIGHT}{LIGHT_HORIZONTAL}  Runs the code in a sandbox (User namespace)\n" \
-             f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Supports indented code\n" \
-             f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Uses the terminal control sequences for better TUI appearance\n" \
-             f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Record the history of the inputs\n" \
-             f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Show the latest output on the title of the terminal\n" \
-             f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Uses Unicode characters for better TUI appearance\n" \
-             f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Coloring the traceback\n" \
-             f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Change the theme\n" \
-             f"    {LIGHT_UP_AND_RIGHT}{LIGHT_HORIZONTAL}  Can extend using the extend_commands decorator. (Type `extend_commands.help_commands()` to see all the commands.)\n\n{LINE}\n\n" \
-             f"\t\t\t\t\t\t\tHappy Using!\n\n\n"
+        logo = "\n".join([" " * 23 + i for i in logo.split("\n")])
+        banner = f"\n{termcolor.colored(logo, *get_color(6))}\n\n{LINE}\n\n " \
+                 f"Features:\n" \
+                 f"    {LIGHT_DOWN_AND_RIGHT}{LIGHT_HORIZONTAL}  Runs the code in a sandbox (User namespace)\n" \
+                 f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Supports indented code\n" \
+                 f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Uses the terminal control sequences for better TUI appearance\n" \
+                 f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Record the history of the inputs\n" \
+                 f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Show the latest output on the title of the terminal\n" \
+                 f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Uses Unicode characters for better TUI appearance\n" \
+                 f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Coloring the traceback\n" \
+                 f"    {LIGHT_VERTICAL_AND_RIGHT}{LIGHT_HORIZONTAL}  Change the theme\n" \
+                 f"    {LIGHT_UP_AND_RIGHT}{LIGHT_HORIZONTAL}  Can extend using the extend_commands decorator. (Type `extend_commands.help_commands()` to see all the commands.)\n\n{LINE}\n\n" \
+                 f"\t\t\t\t\t\t\tHappy Using!\n\n\n"
 
-    logger.info("Initializing shell successful.")
-    
-    if write_banner:
-        sys.stdout.write(banner)
+        logger.info("Initializing shell successful.")
+        
+        if write_banner:
+            sys.stdout.write(banner)
 
 
 def main():
@@ -1124,7 +1163,7 @@ def main():
 
 
 if not (__name__ == "__main__"):
-    __all__ = ["main", "init", "Extensions_Commands", "config"]
+    __all__ = ["main", "init", "config", "Modified_traceback", "parse_code", "on_error"]
 else:
     sys.stderr.write("Please run this script by __main__.py\n")
     sys.stderr.flush()

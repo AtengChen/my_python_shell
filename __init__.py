@@ -33,7 +33,6 @@ import webbrowser           # only for an extension command
 from utils.command import cmd_list, WINDOWS
 from utils.inspect_obj import get_info as _get_info, get_name
 from terminal_data import get_char_data, colors as _colors
-from pretty import pretty
 
 
 # set the default vars

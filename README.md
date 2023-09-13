@@ -78,7 +78,7 @@ Here are a few examples to help you get started:
 ![Hello world](/examples/1.png "Hello world!")
 -----
 2. **Invalid "C-tax"**
-![Invalid C-tax](/examples/2.png "Invalid C-tax")
+[![Invalid C-tax](/examples/2.png "Invalid C-tax")](https://raw.githubusercontent.com/AtengChen/my_python_shell/main/examples/2.png)
 -----
 3. **Addition of two numbers**
 ![Addition of two numbers](/examples/3.png "Addition of two numbers")
@@ -87,7 +87,7 @@ Here are a few examples to help you get started:
 ![Square root of 2](/examples/4.png "Square root of 2")
 -----
 5. **ZeroDivisionError**
-![ZeroDivisionError](/examples/5.png "ZeroDivisionError")
+[![ZeroDivisionError](/examples/5.png "ZeroDivisionError")](https://raw.githubusercontent.com/AtengChen/my_python_shell/main/examples/5.png)
 -----
 6. **Hello, number!**
 ![Hello, number](/examples/6.png "Hello, number!")

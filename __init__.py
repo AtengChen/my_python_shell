@@ -14,6 +14,7 @@ import datetime             # only for an extension command
 import inspect              # get the module name from a path
 import jedi.api             # auto-completion
 import json                 # saving for history
+import keyword              # used in traceback functions
 import logging              # log the init process
 import os                   # use cmd for controling background colors
 import os.path              # path control
@@ -26,7 +27,6 @@ import sys                  #
 import termcolor            # color of the terminal, needs to install it from pip
 import traceback            # capture the error info and color it
 import types                # get NoneType
-import unicodedata          # print unicode charactars
 import warnings             # 
 import webbrowser           # only for an extension command
 
@@ -84,6 +84,7 @@ LIGHT_VERTICAL                  =   "  "
 LIGHT_ARC_DOWN_AND_RIGHT        =   "  "
 LIGHT_ARC_UP_AND_RIGHT          =   "  "
 RIGHTWARDS_ARROW                =   "  "
+BLACK_UPPER_LEFT_TRIANGLE       =   "  "
 
 
 user_storage_file = ""
@@ -213,14 +214,7 @@ def set_commands():
                 sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \tinput_index\t\tinputs\t\t\toutputs\n")
                 for idx, io in Out.items():
                     i, o = io
-                    if len(i) > 10:
-                        i = i[:10]
-                        i += "..."
-                        
-                    o = o.split("\n")[0]
-                    if len(o) > 20:
-                        o = o[:20]
-                        o += "..."
+                    i, o = shorten(i, 10), shorten(o, 20)
                     
                     sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \t{idx}\t\t\t{color_code(i)}\t\t\t{o}\n")
                 sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  \n")
@@ -383,7 +377,7 @@ def load_user_data():
         err_url_dict = {}
         logger.error(f'Error opening {user_storage_file}: {e}')
         sys.stderr.write(f"Error ocurred when opening {user_storage_file}:\n")
-        result = str(Modified_traceback(e))
+        result = str(Pretty_traceback(e))
         sys.stdout.write(result)
         sys.stdout.write("\nPlease clear your data\n")
         sys.stdout.flush()
@@ -487,7 +481,7 @@ def on_exit():
     try:
         return repr(builtins.exit)
     except Exception as e:
-        sys.stderr.write("My Python Shell Internal Error: \n" + Modified_traceback(e))
+        sys.stderr.write("My Python Shell Internal Error: \n" + Pretty_traceback(e))
         exit_f = False
         exit(1)
 
@@ -588,9 +582,9 @@ def modified_displayhook(obj):
         sys.__displayhook__(obj)
 
 
-class Modified_traceback:
+class Pretty_traceback:
     """
-    A modified version of python's traceback
+    A pretty error handling class
     """
     def __init__(self, exc, show_detail=False):
         self.exc = exc
@@ -600,6 +594,7 @@ class Modified_traceback:
         self.err_count = 0
         self.is_syntaxerror = isinstance(exc, SyntaxError)
         self.show_detail = show_detail
+        self.stack_tree = []
 
         for tb in self.traceback_list:
             filename, line_num, func_name, error_code = tb
@@ -613,6 +608,23 @@ class Modified_traceback:
             if hide_detail:
                 continue
             error_code, err_func_type, display_filename = self.get_stack_info(func_name, filename, error_code)
+
+            if func_name in user_gbs:
+                self.stack_tree.append(get_name(user_gbs[func_name]))
+            
+            obj = None
+
+            for attr_name in user_gbs:
+                attr_obj = user_gbs[attr_name]
+                if isinstance(attr_obj, types.ModuleType):
+                    for module_attr in dir(attr_obj):
+                        if not module_attr.startswith("__"):
+                            if module_attr == func_name:
+                                obj = getattr(attr_obj, func_name)
+            if obj is not None:
+                self.stack_tree.append(shorten(get_name(obj), 30))
+            else:
+                self.stack_tree.append(func_name)
 
             if (self.err_count > 4) and isinstance(exc, RecursionError):
                 tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  ...\n"
@@ -630,7 +642,7 @@ class Modified_traceback:
             self.format_err()
         else:
             err_cause = f": {self.exc}" if str(self.exc) else ""
-            self.result += termcolor.colored(f"\nInternal Error: {type(self.exc).__name__}{err_cause}\n\n", *get_color(7)) + Modified_traceback(self.exc, show_detail=True) + "\n" + LINE + "\n"
+            self.result += termcolor.colored(f"\nInternal Error: {type(self.exc).__name__}{err_cause}\n\n", *get_color(7)) + Pretty_traceback(self.exc, show_detail=True) + "\n" + LINE + "\n"
 
 
     def get_stack_info(self, func_name, filename, error_code):
@@ -699,10 +711,14 @@ class Modified_traceback:
         self.result += f"{LINE}" \
                        f"\nTraceback (most recent call last):\n"\
                        f"{self.tb_main}  {LIGHT_UP_AND_RIGHT}  {termcolor.colored(err_msg, *get_color(7))}\n\n"
+
+        if len(self.stack_tree) > 1:
+            self.result += f"Stack_tree: {self.format_stack_tree(self.stack_tree)}\nStack_length: {termcolor.colored(len(self.stack_tree), *get_color(1))}\n\n"
+
         if config["detail_err"] and (not self.show_detail):
             self.result += self.get_error_url()
         
-        if (not self.is_syntaxerror) and (not config["no_suggest_code"]):
+        if isinstance(self.exc, (AttributeError, NameError)) and (not config["no_suggest_code"]) :
             self.result += self.complete() + "\n"
 
         self.result += f"{LINE}\n\n"
@@ -731,7 +747,11 @@ class Modified_traceback:
                 for item in user_gbs:
                     if inspect.ismodule(user_gbs[item]):
                         try:
-                            comp = get_name(getattr(user_gbs[item], comp.name))
+                            obj = getattr(user_gbs[item], comp.name)
+                            repr_obj = get_name(obj)
+                            repr_obj = shorten(repr_obj, 50)
+
+                            comp = termcolor.colored(type(obj).__name__, "light_yellow") + ": \t " + color_code(repr_obj)
                         except AttributeError:
                             continue
                         else:
@@ -739,21 +759,61 @@ class Modified_traceback:
                             break
                 if not f:
                     if comp.name in user_gbs:
-                        comp = get_name(user_gbs[comp.name])
+                        obj = user_gbs[comp.name]
+                        try:
+                            if comp.name not in (dir(user_gbs["extend_commands"])):
+                                eval(repr(obj), user_gbs, user_gbs)
+                        except SyntaxError:
+                            repr_obj = get_name(obj)
+                        else:
+                            repr_obj = comp.name
+
+                        repr_obj = shorten(repr_obj, 50)
+                        comp = termcolor.colored(type(obj).__name__, "light_yellow") + ": \t " + color_code(repr_obj)
+                    elif hasattr(builtins, comp.name):
+                        obj = getattr(builtins, comp.name)
+                        repr_obj = get_name(obj)
+                        repr_obj = shorten(repr_obj, 50)
+                        comp = termcolor.colored(type(obj).__name__, "light_yellow") + ":    " + color_code(repr_obj)
+                    elif comp.name in keyword.kwlist:
+                        comp = termcolor.colored("keyword", "light_yellow") + ":    " + color_code(comp.name)
                     else:
-                        comp = comp.name
+                        comp = color_code(comp.name)
             except ValueError:
                 comp = comp.name
-
-            if len(comp) > 50:
-                comp = comp[:47] + "..."
-
-            sug += f"\t{color_code(comp)}\n"
+            sug += f"\t{comp}\n"
 
         return sug
 
+
+    @staticmethod
+    def format_stack_tree(wordlist, light=False):
+        if light:
+            light_prefix = "light_"
+        else:
+            light_prefix = ""
+        s = ""
+        n = 0
+        colors = ["red", "blue", "green", "magenta", "cyan"]
+        colors = colors[:len(wordlist) % len(colors)] + colors * (len(wordlist) // len(colors))
+        l = list(zip(wordlist, colors))
+        for word, color in l:
+            try:
+                _, next_color = l[n + 1]
+            except IndexError:
+                s += termcolor.colored(word, "white", f"on_{light_prefix}{color}")
+            else:
+                s += termcolor.colored(word, "white", f"on_{light_prefix}{color}") + termcolor.colored(BLACK_UPPER_LEFT_TRIANGLE, f"{light_prefix}{color}", f"on_{light_prefix}{next_color}")
+                n += 1
+        return s
+
+
     def __str__(self):
         return self.result
+
+
+def shorten(name, length):
+    return name[:length - 3] + "..."
 
 
 def parse_code(inp_code):
@@ -926,7 +986,8 @@ def init(write_banner=True, run_from_shell=True):
            LIGHT_VERTICAL, \
            LIGHT_ARC_DOWN_AND_RIGHT, \
            LIGHT_ARC_UP_AND_RIGHT, \
-           RIGHTWARDS_ARROW
+           RIGHTWARDS_ARROW, \
+           BLACK_UPPER_LEFT_TRIANGLE
     
     if config["user_profile"] is not None:
         user_profile = config["user_profile"]
@@ -976,14 +1037,15 @@ def init(write_banner=True, run_from_shell=True):
     colorama.init()
     
     # set the charactars
-    LIGHT_VERTICAL_AND_RIGHT,\
-    LIGHT_UP_AND_RIGHT      ,\
-    LIGHT_DOWN_AND_RIGHT    ,\
-    LIGHT_HORIZONTAL        ,\
-    LIGHT_VERTICAL          ,\
-    LIGHT_ARC_DOWN_AND_RIGHT,\
-    LIGHT_ARC_UP_AND_RIGHT  ,\
-    RIGHTWARDS_ARROW = get_char_data(config["enable_ascii"])
+    LIGHT_VERTICAL_AND_RIGHT  ,\
+    LIGHT_UP_AND_RIGHT        ,\
+    LIGHT_DOWN_AND_RIGHT      ,\
+    LIGHT_HORIZONTAL          ,\
+    LIGHT_VERTICAL            ,\
+    LIGHT_ARC_DOWN_AND_RIGHT  ,\
+    LIGHT_ARC_UP_AND_RIGHT    ,\
+    RIGHTWARDS_ARROW          ,\
+    BLACK_UPPER_LEFT_TRIANGLE = get_char_data(config["enable_ascii"])
 
     LINE = (os.get_terminal_size().columns - 2) * LIGHT_HORIZONTAL
     
@@ -1073,7 +1135,7 @@ def init(write_banner=True, run_from_shell=True):
             sys.stderr = sys.__stderr__
             sys.displayhook = sys.__displayhook__
             sys.excepthook = sys.__excepthook__
-            sys.stderr.write(f"Internal Error: \n\n{Modified_traceback(args[1], show_detail=True)}\n"
+            sys.stderr.write(f"Internal Error: \n\n{Pretty_traceback(args[1], show_detail=True)}\n"
                              f"All data will be cleared.\n"
                              f"If you suspect this is a My Python Shell issue, please report it at: {color_website(website)}\n\n"
                              f"{LINE}\n\n")
@@ -1146,7 +1208,7 @@ def main():
             except Exception as e:
                 Out[len(In)] = (code, termcolor.colored(e, *get_color(7)))
                 if config["pretty_traceback"] or config["pretty_traceback"] == None:
-                    result = str(Modified_traceback(e))
+                    result = str(Pretty_traceback(e))
                 elif config["pretty_traceback"] == False:
                     result = traceback.format_exc()
                 sys.stdout.write(result)

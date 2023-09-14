@@ -4,17 +4,16 @@ Welcome to My Python Shell! This is a Python shell that provides an interactive 
 
 ## Features
 
-- Runs the code in a sandbox (User namespace) for added security.
-- Supports indented code to maintain the Python code's formatting.
-- Uses terminal control sequences for a better Terminal User Interface (TUI) appearance.
-- Records the history of the inputs for easy access to previous code snippets.
-- Displays the latest output on the terminal title for quick reference.
-- Utilizes Unicode characters for an enhanced TUI appearance.
-- Colors the traceback for improved readability.
-- Give traceback tips
-- Allows changing the shell's theme to suit personal preferences.
-- Can be extended using the extend_commands decorator. Type `extend_commands.help_commands()` to see all available commands.
-- ......
+- [x] Supports indented code to maintain the Python code's formatting.
+- [x] Uses terminal control sequences for a better Terminal User Interface (TUI) appearance.
+- [x] Records the history of the inputs for easy access to previous code snippets.
+- [x] Displays the latest output on the terminal title for quick reference.
+- [x] Utilizes Unicode characters for an enhanced TUI appearance.
+- [x] Colors the traceback for improved readability.
+- [x] Give traceback tips
+- [x] Allows changing the shell's theme to suit personal preferences.
+- [x] Can be extended using the extend_commands decorator. Type `extend_commands.help_commands()` to see all available commands.
+- [x] ......
 
 ## Getting Started
 

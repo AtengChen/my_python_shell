@@ -47,19 +47,20 @@ python3 . [-h] [-d] [--noprettytb] [-a] [--nocopyresult] [--nocolor] [--nodetail
 ```
 
 Usage of the options:
-```
-  -h, --help            show this help message and exit
-  -d, --debug           Debugging mode
-  --noprettytb          Formatted traceback
-  -a, --ascii           Enable ascii charactars
-  --nocopyresult        Don't copy the result of a expression after evaluating it
-  --nocolor             No color display
-  --nodetailerr         No detailed error
-  --nohistory           Don't save history
-  -u USER_PROFILE, --user_profile USER_PROFILE
-                        The path to user data. Default path `./.shell`.
-  --nosuggest           Don't suggest complete code when an error happens.
-```
+| argument | description |
+| ----------- | ----------- |
+| `-h` or `--help` | Show this help message and exit |
+| `-d` or `--debug` | Turn on debugging mode |
+| `--noprettytb` | no formatted traceback |
+| `-a` or `--ascii` | Enable ascii charactars |
+| `--nocopyresult` | Don't copy the result of a expression after evaluating it |
+| `--nocolor` | No color display |
+| `--nodetailerr` | No detailed error |
+| `--nohistory` | Don't save history |
+| `-u USER_PROFILE` or `--user_profile USER_PROFILE` | The path to user data. Default path `./.shell`. |
+| `--nosuggest` | Don't suggest complete code when an error happens. |
+
+
 #### After starting the shell
 1. You should now see the My Python Shell welcome message and the interactive prompt.
 
@@ -77,7 +78,7 @@ Here are a few examples to help you get started:
 ![Hello world](/examples/1.png "Hello world!")
 -----
 2. **Invalid "C-tax"**
-[![Invalid C-tax](/examples/2.png "Invalid C-tax")](https://raw.githubusercontent.com/AtengChen/my_python_shell/main/examples/2.png)
+![Invalid C-tax](/examples/2.png "Invalid C-tax")
 -----
 3. **Addition of two numbers**
 ![Addition of two numbers](/examples/3.png "Addition of two numbers")
@@ -86,7 +87,7 @@ Here are a few examples to help you get started:
 ![Square root of 2](/examples/4.png "Square root of 2")
 -----
 5. **ZeroDivisionError**
-[![ZeroDivisionError](/examples/5.png "ZeroDivisionError")](https://raw.githubusercontent.com/AtengChen/my_python_shell/main/examples/5.png)
+![ZeroDivisionError](/examples/5.png "ZeroDivisionError")
 -----
 6. **Hello, number!**
 ![Hello, number](/examples/6.png "Hello, number!")
@@ -113,7 +114,7 @@ Here are a few examples to help you get started:
   - Type `extend_commands.help_commands('[your command here]')` for a specific command.
   - Type `win_term.['your cmd here'](['options-1'], ['options-2'], ['options-3'], ...)`. (only on Windows.)
   - Type `modules.['your builtin module here']` to get the module you want.
-  - Type `quick_help.('[your object]')` to get a quick help for a object.
+  - Type `quick_help.('[your object]')` or `get_info.('[your object]')` to get a quick help for a object.
 
  ### How to register a command
  

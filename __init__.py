@@ -30,15 +30,21 @@ import types                # get NoneType
 import warnings             # 
 import webbrowser           # only for an extension command
 
-from utils.command import cmd_list, WINDOWS
-from utils.inspect_obj import get_info as _get_info, get_name
-from terminal_data import get_char_data, colors as _colors
+try:
+    from .utils.command import cmd_list, WINDOWS
+    from .utils.inspect_obj import get_info as _get_info, get_name
+    from .terminal_data import get_char_data, colors as _colors
+except ImportError:
+    from utils.command import cmd_list, WINDOWS
+    from utils.inspect_obj import get_info as _get_info, get_name
+    from terminal_data import get_char_data, colors as _colors
 
 
 # set the default vars
 
 exec_flag = None
 user_gbs = {"_": ""}
+past_user_gbs = {"_": ""}
 frame_name = ""
 In = []
 Out = {}
@@ -66,6 +72,7 @@ LINE = ""
 py_lexer = pygments.lexers.PythonLexer()
 py_formatter = pygments.formatters.TerminalFormatter(bg="dark")
 website = "https://github.com/AtengChen/my_python_shell"
+lock_flag = None
 
 HAS_GOOGLE_SEARCH = None
 
@@ -112,7 +119,10 @@ class Extensions_Commands:
         if func:
             class _c:
                 def __repr__(self):
-                    res = self.f()
+                    if lock_flag:
+                        res = self.f()
+                    else:
+                        res = None
                     if res:
                         return f"{self.f.__name__}({repr(res)})"
                     else:
@@ -333,7 +343,7 @@ def set_commands():
     
     try:
         user_gbs["python_license"] = builtins.license
-    except: 
+    except Exception: 
         user_gbs["python_license"] = None
 
     @Extensions_Commands
@@ -345,11 +355,32 @@ def set_commands():
                 sys.stderr.write("\nError reading `LICENSE` file, please check your file have downloaded correctly.")
         else:
             try:
-                with open("LICENSE", "r") as f:
+                with open("LICENSE", "r", encoding="UTF-8") as f:
                     printer(f.read())
             except FileNotFoundError:
                 sys.stderr.write("\nError reading `LICENSE` file, please check your file have downloaded correctly.")
+        
+        sys.stdout.write(f"\n\n{LINE}\n")
+    
+    try:
+        user_gbs["python_help"] = builtins.help
+    except Exception: 
+        user_gbs["python_help"] = None
+    
+    @Extensions_Commands
+    def help(*args, **kwargs):
+        sys.stdout.write(f"\n{LINE}\n\n")
 
+        if WINDOWS:
+            if os.system("more README.md"):
+                sys.stderr.write("\nError reading `README.md` file, please check your file have downloaded correctly.")
+        else:
+            try:
+                with open("README.md", "r", encoding="UTF-8") as f:
+                    printer(f.read())
+            except FileNotFoundError:
+                sys.stderr.write("\nError reading `README.md` file, please check your file have downloaded correctly.")
+        
         sys.stdout.write(f"\n\n{LINE}\n")
 
     
@@ -463,6 +494,8 @@ def modified_print(*args, dent=0, stop=True, sep=" ", **kwargs):
 
         if stop:
             _print(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  {tab * dent}{text_list[-1]}", **kwargs)
+        else:
+             _print(f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  {tab * dent}{text_list[-1]}", **kwargs)
 
 
 def match_filename(name):
@@ -574,7 +607,7 @@ def modified_displayhook(obj):
             
             sys.stdout.write(f"{' ' * (len(prompt) - indent)}{LIGHT_ARC_UP_AND_RIGHT}  " + termcolor.colored(f"Out[{len(In)}]", *get_color(0)) + f": {output_obj}\n")
             sys.stdout.write(f"\x1b]0;My python shell - {repr_obj}\x07\r\n")
-            if config["copy_result"] and HAS_PYPERCLIP:
+            if config["copy_result"] and HAS_PYPERCLIP and can_color:
                 pyperclip.copy(repr_obj)
             sys.stdout.write(LINE + "\n")
 
@@ -611,20 +644,20 @@ class Pretty_traceback:
 
             if func_name in user_gbs:
                 self.stack_tree.append(get_name(user_gbs[func_name]))
-            
-            obj = None
-
-            for attr_name in user_gbs:
-                attr_obj = user_gbs[attr_name]
-                if isinstance(attr_obj, types.ModuleType):
-                    for module_attr in dir(attr_obj):
-                        if not module_attr.startswith("__"):
-                            if module_attr == func_name:
-                                obj = getattr(attr_obj, func_name)
-            if obj is not None:
-                self.stack_tree.append(shorten(get_name(obj), 30))
             else:
-                self.stack_tree.append(func_name)
+                obj = None
+    
+                for attr_name in user_gbs:
+                    attr_obj = user_gbs[attr_name]
+                    if isinstance(attr_obj, types.ModuleType):
+                        for module_attr in dir(attr_obj):
+                            if not module_attr.startswith("__"):
+                                if module_attr == func_name:
+                                    obj = getattr(attr_obj, func_name)
+                if obj is not None:
+                    self.stack_tree.append(shorten(get_name(obj), 30))
+                else:
+                    self.stack_tree.append(func_name)
 
             if (self.err_count > 4) and isinstance(exc, RecursionError):
                 tb_main += f"  {LIGHT_VERTICAL_AND_RIGHT}  ...\n"
@@ -750,8 +783,7 @@ class Pretty_traceback:
                             obj = getattr(user_gbs[item], comp.name)
                             repr_obj = get_name(obj)
                             repr_obj = shorten(repr_obj, 50)
-
-                            comp = termcolor.colored(type(obj).__name__, "light_yellow") + ": \t " + color_code(repr_obj)
+                            comp = termcolor.colored(type(obj).__name__, *get_color(1)) + ": \t " + color_code(repr_obj)
                         except AttributeError:
                             continue
                         else:
@@ -769,16 +801,16 @@ class Pretty_traceback:
                             repr_obj = comp.name
 
                         repr_obj = shorten(repr_obj, 50)
-                        comp = termcolor.colored(type(obj).__name__, "light_yellow") + ": \t " + color_code(repr_obj)
+                        comp = termcolor.colored(type(obj).__name__, *get_color(1)) + ": \t " + color_code(repr_obj)
                     elif hasattr(builtins, comp.name):
                         obj = getattr(builtins, comp.name)
                         repr_obj = get_name(obj)
                         repr_obj = shorten(repr_obj, 50)
-                        comp = termcolor.colored(type(obj).__name__, "light_yellow") + ":    " + color_code(repr_obj)
+                        comp = termcolor.colored(type(obj).__name__, *get_color(1)) + ":    " + color_code(repr_obj)
                     elif comp.name in keyword.kwlist:
-                        comp = termcolor.colored("keyword", "light_yellow") + ":    " + color_code(comp.name)
+                        comp = termcolor.colored("keyword", *get_color(1)) + ":    " + color_code(comp.name)
                     else:
-                        comp = color_code(comp.name)
+                        continue
             except ValueError:
                 comp = comp.name
             sug += f"\t{comp}\n"
@@ -788,6 +820,9 @@ class Pretty_traceback:
 
     @staticmethod
     def format_stack_tree(wordlist, light=False):
+        if config["nocolor"]:
+            return f" {BLACK_UPPER_LEFT_TRIANGLE} ".join(wordlist)
+        
         if light:
             light_prefix = "light_"
         else:
@@ -820,7 +855,7 @@ def parse_code(inp_code):
     """
     Parse the code
     """
-    global frame_name, user_gbs, Out
+    global frame_name, user_gbs, Out, lock_flag
     
     mod = ast.parse(inp_code, filename=frame_name)
 
@@ -835,11 +870,15 @@ def parse_code(inp_code):
     
     if len(mod.body):
         exec(compile(mod, frame_name, mode='exec'), user_gbs, user_gbs)
+        sys.stdout.write(compare())
         Out[len(In)] = (inp_code, "")
         return
-
+    
     if expr is not None:
-        modified_displayhook(eval(compile(expr, frame_name, mode='eval'), user_gbs, user_gbs))
+        res = eval(compile(expr, frame_name, mode='eval'), user_gbs, user_gbs)
+        lock_flag = True
+        modified_displayhook(res)
+        lock_flag = False
 
 
 def code_is_complete(inp_code):
@@ -904,6 +943,7 @@ def color_code(code_string, offset=None, lines=False):
     """
     global py_lexer, py_formatter
     
+    result = code_string
     if not config["nocolor"]:
         if offset:
             code_string = code_string.strip()
@@ -945,7 +985,91 @@ def get_info(obj):
         else:
             sys.stdout.write(f"{(len(prompt) - indent) * ' '}{LIGHT_VERTICAL_AND_RIGHT}  {k}:\t\t{v}\n")
 
-            
+
+def compare():
+    global user_gbs, past_user_gbs
+    
+    dct1_items = set()
+    for i in past_user_gbs.items():
+        try:
+            dct1_items.add(i)
+        except TypeError:
+            pass
+    
+    dct2_items = set()
+    for i in user_gbs.items():
+        try:
+            dct2_items.add(i)
+        except TypeError:
+            pass
+    
+    diff = dct1_items ^ dct2_items
+    added = set()
+    deleted = set()
+    edited = set()
+    
+    for i in diff:
+        for j in dct1_items:
+            if i == j:
+                deleted.add(i)
+
+        for j in dct2_items:
+            if i == j:
+                added.add(i)
+    
+    added, deleted = dict(added), dict(deleted)
+    
+    _edited = set(added.keys()) & set(deleted.keys())
+    edited = {}
+    
+    for i in _edited:
+        for j in copy.copy(deleted):
+            if i == j:
+                edited[j] = deleted[j]
+                del deleted[j]
+
+        for j in copy.copy(added):
+            if i == j and i != "_":
+                edited[j] = added[j]
+                del added[j]
+
+    s = ""
+    if added:
+        s += f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  Added vars:\n"
+        n = 0
+        for k, v in added.items():
+            if n < 10:
+                s += f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  \t{k}\t{color_code(get_name(v))}\n"
+                n += 1
+            else:
+                s += f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  \t...\n{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}\n"
+                break
+
+    if deleted:
+        s += f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  Deleted vars:\n"
+        n = 0
+        for k, v in deleted.items():
+            if n < 10:
+                s += f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  \t{k}\n"
+                n += 1
+            else:
+                s += f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  \t...\n{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}\n"
+                break
+
+    if edited:
+        s += f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  Edited vars:\n"
+        n = 0
+        for k, v in edited.items():
+            if n < 10:
+                s += f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  \t{k} {RIGHTWARDS_ARROW} {color_code(get_name(v))}\n"
+                n += 1
+            else:
+                s += f"{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}  \t...\n{' ' * (len(prompt) - indent)}{LIGHT_VERTICAL_AND_RIGHT}\n"
+                break
+
+    return s
+
+
 def init(write_banner=True, run_from_shell=True):
     """
     Initalize the whole shell:
@@ -958,6 +1082,7 @@ def init(write_banner=True, run_from_shell=True):
     """
     global exec_flag, \
            user_gbs, \
+           past_user_gbs, \
            frame_name, \
            In, \
            Out, \
@@ -1052,13 +1177,15 @@ def init(write_banner=True, run_from_shell=True):
     logger.info("Initializing unicode elements and color complete")
     
     load_user_data()
-    user_gbs = {"__name__": "__main__",
-                "__doc__": banner,
-                "__package__": None,
-                "__spec__": None,
-                "__annotations__": {},
-                "__loader__": None,
-                "__dict__": user_gbs}
+    if config["debug_f"]:
+        user_gbs = sys.modules["__main__"].__dict__
+    else:
+        user_gbs = {"__name__": "__main__",
+                    "__doc__": banner,
+                    "__package__": None,
+                    "__spec__": None,
+                    "__annotations__": {},
+                    "__loader__": None}
    
     if run_from_shell:
         user_gbs.update({
@@ -1095,6 +1222,8 @@ def init(write_banner=True, run_from_shell=True):
             user_gbs["win_term"] = terminal_commands()
 
         set_commands()
+
+    past_user_gbs = copy.copy(user_gbs)
 
     logger.info("Initializing terminal commands complete")
     
@@ -1190,13 +1319,14 @@ def main():
     """
     Main part of the shell
     """
-    global exec_flag, user_gbs, frame_name, prompt, err_pattern, interact_f, code, exit_f, tb_list, pretty_traceback, _exit, on_error
+    global exec_flag, user_gbs, frame_name, prompt, err_pattern, interact_f, code, exit_f, tb_list, pretty_traceback, _exit, on_error, past_user_gbs
     interact_f = True
 
     try:
         while True:
             try:
                 code = input_code()
+                past_user_gbs = copy.copy(user_gbs)
                 parse_code(code)
             except SystemExit:
                 if exit_f:
@@ -1215,7 +1345,6 @@ def main():
                 tb_list.append(result)
             finally:
                 save_data()
-                user_gbs["__dict__"] = user_gbs
 
     except KeyboardInterrupt as e:
         sys.stderr.write(termcolor.colored(f"\nKeyboardInterrupt\n", *get_color(7)))
@@ -1224,7 +1353,7 @@ def main():
 
 
 if not (__name__ == "__main__"):
-    __all__ = ["main", "init", "config", "Modified_traceback", "parse_code", "on_error"]
+    __all__ = ["main", "init", "config", "Pretty_traceback", "parse_code", "on_error"]
 else:
     sys.stderr.write("Please run this script by __main__.py\n")
     sys.stderr.flush()
